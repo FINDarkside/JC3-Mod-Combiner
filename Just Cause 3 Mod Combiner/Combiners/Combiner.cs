@@ -91,15 +91,7 @@ namespace Just_Cause_3_Mod_Combiner
 			}
 			else if (fileFormat == FileFormat.Unknown)
 			{
-				var originalBytes = File.ReadAllBytes(originalFile);
-				var replacingBytes = originalBytes;
-				foreach (string file in files)
-				{
-					var bytes = File.ReadAllBytes(file);
-					if (!Enumerable.SequenceEqual(bytes, originalBytes))
-						replacingBytes = bytes;
-				}
-				File.WriteAllBytes(outputPath, replacingBytes);
+				OverrideCombine(originalFile, files, outputPath);
 			}
 			else if (fileFormat == FileFormat.SmallArchive)
 			{
@@ -134,6 +126,18 @@ namespace Just_Cause_3_Mod_Combiner
 
 		}
 
+		private static void OverrideCombine(string originalFile, IList<string> files, string outputPath)
+		{
+			var originalBytes = File.ReadAllBytes(originalFile);
+			var replacingBytes = originalBytes;
+			foreach (string file in files)
+			{
+				var bytes = File.ReadAllBytes(file);
+				if (!Enumerable.SequenceEqual(bytes, originalBytes))
+					replacingBytes = bytes;
+			}
+			File.WriteAllBytes(outputPath, replacingBytes);
+		}
 
 	}
 }

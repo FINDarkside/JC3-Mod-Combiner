@@ -81,13 +81,12 @@ namespace Just_Cause_3_Mod_Combiner
 			{
 				if (item.Selected)
 				{
-					Debug.WriteLine(item.Name + "-----");
 					this.SelectedItem = item.Value;
 					selectedValue = true;
 					break;
 				}
 			}
-			Debug.WriteLine("--- " + selectedValue);
+
 			if (selectedValue)
 			{
 				this.DialogResult = true;
