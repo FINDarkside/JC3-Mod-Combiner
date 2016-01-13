@@ -1,0 +1,31 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+using System.IO;
+
+namespace Just_Cause_3_Mod_Combiner
+{
+	public static class JSONTools
+	{
+		public static object GetID(JToken token)
+		{
+			if (token.GetType() == typeof(JObject))
+			{
+				var obj = (JObject)token;
+				if (obj.GetValue("id") != null)
+					return obj.GetValue("id");
+				else
+					return obj.GetValue("name");
+			}
+			else if (token.GetType() == typeof(JValue))
+			{
+				var value = (JValue)token;
+
+			}
+			return null;
+		}
+	}
+}

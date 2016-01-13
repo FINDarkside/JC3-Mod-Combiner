@@ -1,0 +1,48 @@
+﻿<Window x:Class="Just_Cause_3_Mod_Combiner.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:my="clr-namespace:Just_Cause_3_Mod_Combiner"
+		xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+
+        Title="Just Cause 3 Mod Combiner" Height="600" Width="900"
+		WindowStartupLocation= "CenterScreen" Closing="Window_Closing">
+
+	<xctk:BusyIndicator Name="busyIndicator" IsBusy="False">
+		<Grid>
+			<Grid.Background>
+				<LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+					<GradientStop Color="#FF81C0FF" Offset="1"/>
+					<GradientStop Color="#FF0582FF" Offset="0.031"/>
+				</LinearGradientBrush>
+			</Grid.Background>
+			<Grid Margin="20 0 20 0">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="auto" />
+					<RowDefinition Height="*" />
+					<RowDefinition Height="auto" />
+				</Grid.RowDefinitions>
+				<Image Name="img" Grid.Row="0" Stretch="Uniform" Source="Images/jc3_logo_transparent_150.png" MaxHeight="150"></Image>
+				<Grid Grid.Row="1">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="auto" />
+						<RowDefinition Height="*" />
+					</Grid.RowDefinitions>
+					<WrapPanel Orientation="Horizontal" Margin="0 5" Grid.Row="0">
+						<Button Width="120" Margin="0 0 5 0" Click="AddFile">Add file</Button>
+						<Button Width="120"   HorizontalContentAlignment="Center" Click="DeleteSelectedItems">Remove</Button>
+					</WrapPanel>
+					<my:DragDropBox x:Name="fileList" Items="{Binding Items, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1"></my:DragDropBox>
+				</Grid>
+				<StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Center" Margin="0 10">
+					<StackPanel Margin="0 0 20 0">
+						<TextBlock VerticalAlignment="Center" Margin="0 0 0 5">On collission</TextBlock>
+						<RadioButton Name="rbNormalCombine" IsChecked="True">Use value with higher priority</RadioButton>
+						<RadioButton Name="rbAdvancedCombine">Select manually</RadioButton>
+					</StackPanel>
+
+					<Button Width="120" Height="22" VerticalAlignment="Bottom" Click="CombineClicked">Combine</Button>
+				</StackPanel>
+			</Grid>
+		</Grid>
+	</xctk:BusyIndicator>
+</Window>

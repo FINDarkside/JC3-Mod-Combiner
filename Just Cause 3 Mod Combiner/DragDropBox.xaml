@@ -1,0 +1,32 @@
+﻿<UserControl x:Class="Just_Cause_3_Mod_Combiner.DragDropBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+	<ListView Name="fileList" AllowDrop="True">
+		<ListView.Style>
+			<Style TargetType="ListView">
+				<Style.Triggers>
+					<Trigger Property="HasItems" Value="False">
+						<Setter Property="Template">
+							<Setter.Value>
+								<ControlTemplate TargetType="ListView">
+									<Grid Background="White">
+										<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+											<TextBlock HorizontalAlignment="Center" TextWrapping="Wrap">Drag &amp; drop files</TextBlock>
+											<TextBlock HorizontalAlignment="Center" TextWrapping="Wrap">
+												First file has lowest priority, last file has highest priority when combining
+											</TextBlock>
+										</StackPanel>
+									</Grid>
+								</ControlTemplate>
+							</Setter.Value>
+						</Setter>
+					</Trigger>
+				</Style.Triggers>
+			</Style>
+		</ListView.Style>
+	</ListView>
+</UserControl>

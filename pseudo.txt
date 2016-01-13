@@ -1,0 +1,33 @@
+originalNode, nodes
+
+
+for originalNodeChild in originalNode
+	if originalNodeChild == Element
+		getCorresponding nodes
+		if one of corresponding nodes == null
+			remove element
+			return;
+		call recursively
+	else
+		if one of nodes values != originalNode values
+			if notifyOnCollission
+				ask user
+			else
+				Combine using the last value
+
+----------------------------
+
+for node in nodes
+	recursively loop all nodes:
+		if node != used
+			combine
+			add
+
+
+---------------------------------------------------------------------
+
+Stackdata:
+	Node
+	Correspondingnodes
+	filenames
+
