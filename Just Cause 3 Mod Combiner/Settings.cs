@@ -30,7 +30,6 @@ namespace Just_Cause_3_Mod_Combiner
 			{
 				Directory.CreateDirectory(tempFolder);
 			}
-
 			var settingsPath = Path.Combine(files, "settings.json");
 			if (File.Exists(settingsPath))
 			{

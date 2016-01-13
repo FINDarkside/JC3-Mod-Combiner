@@ -34,6 +34,7 @@ namespace Just_Cause_3_Mod_Combiner
 		public JSONCombiner(string originalJSON, IList<string> json, bool notifyCollissions)
 		{
 			this.originalDoc = JObject.Parse(originalJSON);
+			docs = new JObject[json.Count];
 			for (var i = 0; i < json.Count; i++)
 			{
 				docs[i] = JObject.Parse(json[i]);

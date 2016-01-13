@@ -33,7 +33,7 @@ namespace Just_Cause_3_Mod_Combiner
 				throw new Exception("Couldn't find default file");
 			}
 			var outputPath = Path.Combine(Settings.user.JC3Folder, "dropzone", originalFile.Substring(Settings.defaultFiles.Length + 1));
-
+			Debug.WriteLine(outputPath);
 			Combine(originalFile, fileFormat, files, outputPath);
 
 		}
@@ -87,7 +87,7 @@ namespace Just_Cause_3_Mod_Combiner
 			else if (fileFormat == FileFormat.Xml)
 			{
 				var combiner = new XmlCombiner(originalFile, files, rootFiles, notifyCollissions);
-				combiner.Combine(originalFile);
+				combiner.Combine(outputPath);
 			}
 			else if (fileFormat == FileFormat.Unknown)
 			{
@@ -99,7 +99,7 @@ namespace Just_Cause_3_Mod_Combiner
 					if (!Enumerable.SequenceEqual(bytes, originalBytes))
 						replacingBytes = bytes;
 				}
-				File.WriteAllBytes(originalFile, replacingBytes);
+				File.WriteAllBytes(outputPath, replacingBytes);
 			}
 			else if (fileFormat == FileFormat.SmallArchive)
 			{

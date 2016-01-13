@@ -8,6 +8,7 @@ using System.Linq;
 using Ookii.Dialogs;
 using System.Threading.Tasks;
 using WForms = System.Windows.Forms;
+using System.Collections.Generic;
 
 namespace Just_Cause_3_Mod_Combiner
 {
@@ -32,6 +33,13 @@ namespace Just_Cause_3_Mod_Combiner
 		{
 			Settings.mainWindow = this;
 			InitializeComponent();
+
+			var items = new List<SelectionItem>();
+			items.Add(new SelectionItem() { Name = "test", Description = "Testsadsadasdsadasdasdasdasdasdasdgfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffasdasdasdasd" });
+			items.Add(new SelectionItem() { Name = "test2", Description = "Testsadsadasdsadasdasdasdasdasdasdasdasdasdasd" });
+			object r = null;
+			bool b = false;
+			System.Diagnostics.Debug.WriteLine(SelectionDialog.Show(items, out r, out b));
 
 			Settings.local.Save();
 

@@ -23,6 +23,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -67,6 +68,7 @@
     <Compile Include="Combiners\BinaryCombiner.cs" />
     <Compile Include="Combiners\Combiner.cs" />
     <Compile Include="Combiners\JSONTools.cs" />
+    <Compile Include="Converters\ObjectToBooleanConverter.cs" />
     <Compile Include="DragDropBox.xaml.cs">
       <DependentUpon>DragDropBox.xaml</DependentUpon>
     </Compile>

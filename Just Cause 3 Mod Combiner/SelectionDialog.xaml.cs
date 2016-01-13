@@ -19,90 +19,75 @@ namespace Just_Cause_3_Mod_Combiner
 	/// <summary>
 	/// Interaction logic for SelectionDialog.xaml
 	/// </summary>
+	///
+
+	public class SelectionItem
+	{
+		public string Name { get; set; }
+		public string Description { get; set; }
+		public bool Selected { get; set; }
+		public object Value { get; set; }
+	}
+
 	public partial class SelectionDialog : Window
 	{
 
-		public CollissionData Original { get; set; }
-		public List<CollissionData> Collissions { get; set; }
 		public bool DontShowAgain { get; set; }
-		public XmlNode SelectedNode;
+		public IList<SelectionItem> Items { get; set; }
+		public object SelectedItem;
 
 		public SelectionDialog()
 		{
 			InitializeComponent();
 		}
 
-		public SelectionDialog(XmlNode originalNode, IList<XmlNode> collidingNodes, IList<string> fileNames)
+
+		public SelectionDialog(IList<SelectionItem> items)
 		{
 			InitializeComponent();
+
+			foreach (var item in items)
+				item.Selected = false;
 			this.MaxHeight = System.Windows.SystemParameters.PrimaryScreenWidth;
-
-			var data = new CollissionData();
-			data.OuterXml = XmlTools.GetOuterXml(originalNode); ;
-			data.Node = originalNode;
-			Original = data;
-
-			if(originalNode != null)
-				tbHeader.Text = "Collission in " + XmlTools.GetPath(originalNode);
-			else
-			{
-				foreach(XmlNode node in collidingNodes){
-					if (node != null)
-					{
-						tbHeader.Text = "Collission in " + XmlTools.GetPath(node);
-						break;
-					}
-				}
-			}
-
-			var collissions = new List<CollissionData>();
-
-			for (int i = 0; i < collidingNodes.Count; i++)
-			{
-				data = new CollissionData();
-				var node = collidingNodes[i];
-				data.OuterXml = XmlTools.GetOuterXml(node);
-				data.FilePath = fileNames[i];
-				data.Node = node;
-				collissions.Add(data);
-			}
-			collissions[collissions.Count - 1].Selected = true;
-			Collissions = collissions;
+			this.Items = items;
 
 			this.DataContext = this;
-
-			
 		}
 
-
-		public class CollissionData
+		public static bool Show(IList<SelectionItem> items, out object selectedValue, out bool notifyCollissions)
 		{
-			public string FilePath { get; set; }
-			public string OuterXml { get; set; }
-			public XmlNode Node { get; set; }
-			public bool Selected { get; set; }
+			Debug.WriteLine(items.Count);
+			object result = null;
+			bool notifyColl = false;
+			bool dialogResult = false;
+			Settings.mainWindow.Dispatcher.Invoke((System.Windows.Forms.MethodInvoker)delegate
+			{
+				var dialog = new SelectionDialog(items);
+				dialog.ShowDialog();
+				result = dialog.SelectedItem;
+				notifyColl = dialog.DontShowAgain;
+				dialogResult = dialog.DialogResult == true;
+			});
+			selectedValue = result;
+			notifyCollissions = notifyColl;
+			return dialogResult;
 		}
 
 		private void SelectClicked(object sender, RoutedEventArgs e)
 		{
 			bool selectedValue = false;
 
-			if (Original.Selected)
+			foreach (SelectionItem item in Items)
 			{
-				this.SelectedNode = Original.Node;
-				selectedValue = true;
-			}
-
-			foreach (CollissionData data in Collissions)
-			{
-				if (data.Selected)
+				if (item.Selected)
 				{
-					this.SelectedNode = data.Node;
+					Debug.WriteLine(item.Name + "-----");
+					this.SelectedItem = item.Value;
 					selectedValue = true;
 					break;
 				}
 			}
-
+			Debug.WriteLine("--- " + selectedValue);
 			if (selectedValue)
 			{
 				this.DialogResult = true;

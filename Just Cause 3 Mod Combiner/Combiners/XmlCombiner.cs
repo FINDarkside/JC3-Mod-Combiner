@@ -14,11 +14,9 @@ namespace Just_Cause_3_Mod_Combiner
 		private XmlDocument originalDoc;
 		private XmlDocument[] docs;
 		private string[] fileNames;
-		private string originalBin;
-		private IList<string> binFiles;
 		private bool notifyCollissions;
 
-		public XmlCombiner(string originalFile, IList<string> files,IList<string> binFiles, bool notifyCollissions)
+		public XmlCombiner(string originalFile, IList<string> files, IList<string> binFiles, bool notifyCollissions)
 		{
 			this.fileNames = binFiles.ToArray<string>();
 			docs = new XmlDocument[files.Count];
@@ -110,18 +108,38 @@ namespace Just_Cause_3_Mod_Combiner
 							nonNullChangeFound = true;
 					}
 
+					var items = new List<SelectionItem>();
+					items.Add(new SelectionItem() { Name = "Default", Description = XmlTools.GetOuterXml(originalChildNode), Value = originalChildNode });
+					foreach (int index in changeIDs)
+					{
+						var changedNode = correspodingNodes[index];
+						for (var i = 1; i < items.Count; i++)
+						{
+							var found = false;
+							if (changedNode.OuterXml == originalChildNode.OuterXml)
+							{
+								items[i].Name += "\n" + fileNames[index];
+								found = true;
+								break;
+							}
+							if (!found)
+								items.Add(new SelectionItem() { Name = fileNames[index], Description = XmlTools.GetOuterXml(changedNode), Value = changedNode });
+						}
+					}
+
+
+
 					//
 
 					//
 					if (textNodeFound)
 					{
-						var dialog = new SelectionDialog(originalChildNode, changeNodes, files);
+						//TODO:Clean ^?
 						var overridingNode = changeNodes[changeNodes.Count - 1];
-						if (uniqueChanges.Count > 1 && notifyCollissions && dialog.ShowDialog() == true)
+						object result = null;
+						if (uniqueChanges.Count > 1 && notifyCollissions && SelectionDialog.Show(items, out result, out notifyCollissions))
 						{
-							if (dialog.DontShowAgain)
-								notifyCollissions = false;
-							overridingNode = dialog.SelectedNode;
+							overridingNode = result as XmlNode;
 						}
 
 						if (overridingNode == null)
@@ -176,14 +194,12 @@ namespace Just_Cause_3_Mod_Combiner
 					else if (nullFound && nonNullChangeFound)
 					{
 						//Fix to ask if continue combine or not
-						var dialog = new SelectionDialog(originalChildNode, changeNodes, files);
 						var continueCombining = true;
-						if (notifyCollissions && dialog.ShowDialog() == true)
+						object result = null;
+						if (notifyCollissions && SelectionDialog.Show(items, out result, out notifyCollissions))
 						{
-							if (dialog.SelectedNode == null)
+							if (result == null)
 								continueCombining = false;
-							if (dialog.DontShowAgain)
-								notifyCollissions = false;
 						}
 						if (continueCombining)
 						{
@@ -302,12 +318,30 @@ namespace Just_Cause_3_Mod_Combiner
 						files.Add(this.fileNames[index]);
 				}
 
-				var dialog = new SelectionDialog(originalNode, changeNodes, fileNames);
-				if (notifyCollissions && dialog.ShowDialog() == true)
+				var items = new List<SelectionItem>();
+				items.Add(new SelectionItem() { Name = "Default", Description = XmlTools.GetOuterXml(originalNode), Value = originalNode });
+				foreach (int index in changeIDs)
 				{
-					overridingNode = dialog.SelectedNode;
-					if (dialog.DontShowAgain)
-						notifyCollissions = false;
+					var changedNode = nodes[index];
+					var found = false;
+					for (var i = 1; i < items.Count; i++)
+					{
+						if (changedNode.OuterXml == originalNode.OuterXml)
+						{
+							items[i].Name += "\n" + fileNames[index];
+							found = true;
+							break;
+						}
+					}
+					if (!found)
+						items.Add(new SelectionItem() { Name = fileNames[index], Description = XmlTools.GetOuterXml(changedNode), Value = changedNode });
+
+				}
+
+				object result = null;
+				if (notifyCollissions && SelectionDialog.Show(items, out result, out notifyCollissions))
+				{
+					overridingNode = result as XmlNode;
 				}
 				else
 				{
