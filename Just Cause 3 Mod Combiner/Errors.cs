@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WForms = System.Windows.Forms;
+using System.Windows;
 
 namespace Just_Cause_3_Mod_Combiner
 {
@@ -18,13 +14,20 @@ namespace Just_Cause_3_Mod_Combiner
 		public static void Handle(Exception e, bool showDialog)
 		{
 			if (showDialog)
-				WForms.MessageBox.Show(e.ToString(), "Exception", WForms.MessageBoxButtons.OK, WForms.MessageBoxIcon.Error);
+				MessageBox.Show(e.ToString(), "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
 			Console.Error.WriteLine(e.ToString());
+		}
+
+		public static void Handle(string message, Exception e)
+		{
+			string s = message + "\n" + e.ToString();
+			MessageBox.Show(s, "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+			Console.Error.WriteLine(s);
 		}
 
 		public static void Alert(string text)
 		{
-			WForms.MessageBox.Show(text, "Alert", WForms.MessageBoxButtons.OK, WForms.MessageBoxIcon.Error);
+			MessageBox.Show(text, "Alert", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 }

@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Just_Cause_3_Mod_Combiner
 {
@@ -81,12 +76,13 @@ namespace Just_Cause_3_Mod_Combiner
 		public static string Unpack(string inputPath)
 		{
 			string outputPath = Path.GetFileNameWithoutExtension(inputPath);
-			return Unpack(inputPath, outputPath);
+			return Unpack(inputPath, outputPath, null);
 		}
 
-		public static string Unpack(string inputPath, string outputPath)
+		public static string Unpack(string inputPath, string outputPath, string regex)
 		{
-			Run(unpack, "\"" + inputPath + "\" \"" + outputPath + "\"");
+			Debug.WriteLine("\"" + inputPath + "\" \"" + outputPath + "\" --nu" + (regex != null ? " -f:" + regex : ""));
+			Run(unpack, "\"" + inputPath + "\" \"" + outputPath + "\" --nu" + (regex != null ? " -f:" + regex : "" ));
 
 			if (Directory.Exists(outputPath))
 				return outputPath;

@@ -7,8 +7,10 @@ using System.Windows.Media;
 using System.Linq;
 using Ookii.Dialogs;
 using System.Threading.Tasks;
-using WForms = System.Windows.Forms;
-using System.Collections.Generic;
+using System.Net;
+using System.Text.RegularExpressions;
+using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace Just_Cause_3_Mod_Combiner
 {
@@ -31,18 +33,40 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public MainWindow()
 		{
+			if (Settings.user.checkForUpdates && System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+			{
+				try
+				{
+					WebClient webClient = new WebClient();
+					webClient.DownloadStringCompleted += (DownloadStringCompletedEventHandler)((sender, e) =>
+					{
+						if (e.Error != null)
+							return;
+						string result = e.Result;
+						string match = Regex.Match(result, @"<b>Version</b>r[0-9]+<").Value;
+						int newestRevision = int.Parse(Regex.Match(match, "r[0-9]+").Value.Substring(1));
+						Debug.WriteLine(newestRevision + "");
+						if (newestRevision > Settings.revision && System.Windows.MessageBox.Show("Current version: r" + Settings.revision + "\nNewest version: r" + newestRevision + "\nOpen justcause3mods.com mod page?", "New version available", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+							Process.Start("http://justcause3mods.com/mods/mod-combiner/");
+					});
+					webClient.DownloadStringTaskAsync("http://justcause3mods.com/mods/mod-combiner/");
+				}
+				catch (Exception e)
+				{
+					Errors.Handle("Failed to check for new version", e);
+				}
+			}
+
+			var oldSettings = Path.Combine(Settings.local.lastInstallPath, @"Files\settings.json");
+			if (File.Exists(oldSettings))
+			{
+				Settings.user = JsonConvert.DeserializeObject<UserSettings>(File.ReadAllText(oldSettings));
+			}
+
 			Settings.mainWindow = this;
 			InitializeComponent();
-
-			var items = new List<SelectionItem>();
-			items.Add(new SelectionItem() { Name = "test", Description = "Testsadsadasdsadasdasdasdasdasdasdgfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffasdasdasdasd" });
-			items.Add(new SelectionItem() { Name = "test2", Description = "Testsadsadasdsadasdasdasdasdasdasdasdasdasdasd" });
-			object r = null;
-			bool b = false;
-			System.Diagnostics.Debug.WriteLine(SelectionDialog.Show(items, out r, out b));
-
+			RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.Linear);
 			Settings.local.Save();
-
 			Title += " r" + Settings.revision;
 
 			if (Settings.user.JC3Folder == null || !Directory.Exists(Settings.user.JC3Folder))
@@ -56,7 +80,7 @@ namespace Just_Cause_3_Mod_Combiner
 					{
 						var installpath = regKey.GetValue("SteamPath").ToString() + @"/SteamApps/common/Just Cause 3";
 						if (Directory.Exists(installpath))
-							if (WForms.MessageBox.Show("Just Cause 3 folder found at\n" + installpath, "Set as JC3 path?", WForms.MessageBoxButtons.YesNo, WForms.MessageBoxIcon.Question) == WForms.DialogResult.Yes)
+							if (MessageBox.Show("Just Cause 3 folder found at\n" + installpath, "Set as JC3 path?", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
 							{
 								Settings.user.JC3Folder = installpath;
 							}
@@ -85,16 +109,12 @@ namespace Just_Cause_3_Mod_Combiner
 				}
 			}
 
-			if (!Directory.Exists(Path.Combine(Settings.user.JC3Folder, "dropzone")))
-			{
-				Directory.CreateDirectory(Path.Combine(Settings.user.JC3Folder, "dropzone"));
-			}
+
+			Directory.CreateDirectory(Path.Combine(Settings.user.JC3Folder, "dropzone"));
+
 
 			Items = new ObservableCollection<Item>();
 			fileList.Items = Items;
-
-			RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.Linear);
-
 
 
 		}
@@ -123,7 +143,7 @@ namespace Just_Cause_3_Mod_Combiner
 		{
 			if (fileList.Items.Count < 2)
 			{
-				WForms.MessageBox.Show("You need to select at least 2 files", "", WForms.MessageBoxButtons.OK, WForms.MessageBoxIcon.Error);
+				MessageBox.Show("You need to select at least 2 files", "", MessageBoxButton.OK, MessageBoxImage.Error);
 				return;
 			}
 
@@ -133,12 +153,12 @@ namespace Just_Cause_3_Mod_Combiner
 				if (Path.GetFileName(item.File) != fileName)
 				{
 
-					WForms.MessageBox.Show("All files must have the same name", "Filenames don't match", WForms.MessageBoxButtons.OK, WForms.MessageBoxIcon.Error);
+					MessageBox.Show("All files must have the same name", "Filenames don't match", MessageBoxButton.OK, MessageBoxImage.Error);
 
 				}
 				if (Path.GetExtension(item.File) != Path.GetExtension(fileName))
 				{
-					WForms.MessageBox.Show("Files don't have the same extension", "", WForms.MessageBoxButtons.OK, WForms.MessageBoxIcon.Error);
+					MessageBox.Show("Files don't have the same extension", "", MessageBoxButton.OK, MessageBoxImage.Error);
 					return;
 				}
 			}
@@ -153,7 +173,7 @@ namespace Just_Cause_3_Mod_Combiner
 					Combiner.Combine(items, alertCollissions);
 				});
 				busyIndicator.IsBusy = false;
-				WForms.MessageBox.Show("File combined", "Success", WForms.MessageBoxButtons.OK, WForms.MessageBoxIcon.None);
+				MessageBox.Show("Combined mod can be found in dropzone folder", "Success", MessageBoxButton.OK, MessageBoxImage.None);
 
 			}
 			catch (Exception ex)
@@ -162,19 +182,46 @@ namespace Just_Cause_3_Mod_Combiner
 				Errors.Handle(ex);
 			}
 
-
-			var di = new DirectoryInfo(Settings.tempFolder);
-			foreach (FileInfo file in di.GetFiles())
-				file.Delete();
-			foreach (DirectoryInfo dir in di.GetDirectories())
-				dir.Delete(true);
-
+			Task.Run(() =>
+			{
+				var di = new DirectoryInfo(Settings.tempFolder);
+				foreach (FileInfo file in di.GetFiles())
+					file.Delete();
+				foreach (DirectoryInfo dir in di.GetDirectories())
+					dir.Delete(true);
+			});
 
 		}
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
 			Settings.user.Save();
+		}
+
+		private async void Window_Loaded(object sender, RoutedEventArgs e)
+		{
+			var defaultFilesPath = Path.Combine(Settings.local.lastInstallPath, @"Files\Default files");
+
+			if (Directory.Exists(defaultFilesPath))
+			{
+				busyIndicator.IsBusy = true;
+				busyIndicator.BusyContent = "Moving default file cache from " + defaultFilesPath;
+				await Task.Run(() =>
+				{
+					foreach (var file in Directory.EnumerateFiles(defaultFilesPath, "*", SearchOption.AllDirectories))
+					{
+						var relativePath = file.Substring(defaultFilesPath.Length + 1);
+						var newPath = Path.Combine(Settings.defaultFiles, relativePath);
+						if (!File.Exists(newPath))
+						{
+							File.Move(file, newPath);
+						}
+					}
+				});
+				busyIndicator.IsBusy = false;
+			}
+
+
 		}
 
 

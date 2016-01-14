@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
-using System.Windows.Forms;
 
 namespace Just_Cause_3_Mod_Combiner
 {
@@ -30,7 +27,7 @@ namespace Just_Cause_3_Mod_Combiner
 			string originalFile = DefaultFiles.GetFile(Path.GetFileName(files[0]));
 			if (originalFile == null)
 			{
-				throw new Exception("Couldn't find default file");
+				throw new Exception("Couldn't find default file for " + Path.GetFileName(files[0]));
 			}
 			var outputPath = Path.Combine(Settings.user.JC3Folder, "dropzone", originalFile.Substring(Settings.defaultFiles.Length + 1));
 			Debug.WriteLine(outputPath);
@@ -62,36 +59,21 @@ namespace Just_Cause_3_Mod_Combiner
 			}
 			else if (fileFormat == FileFormat.Adf)
 			{
-				//TODO: notify collissions
-				var originalBytes = File.ReadAllBytes(originalFile);
-				var replacingBytes = originalBytes;
-				bool useReplace = false;
-				foreach (string file in files)
-				{
-					var bytes = File.ReadAllBytes(file);
-					if (!Enumerable.SequenceEqual(bytes, originalBytes))
-						replacingBytes = bytes;
-					if (bytes.Length != originalBytes.Length)
-						useReplace = true;
-				}
-				if (useReplace)
-				{
-					File.WriteAllBytes(outputPath, replacingBytes);
-				}
-				else
-				{
-					BinaryCombiner.Combine(originalFile, files, outputPath, notifyCollissions);
-				}
-
+				OverrideCombine(originalFile, files, outputPath, true);
 			}
 			else if (fileFormat == FileFormat.Xml)
 			{
-				var combiner = new XmlCombiner(originalFile, files, rootFiles, notifyCollissions);
+				var fileNames = rootFiles;
+				if (files != rootFiles)
+				{
+					fileNames = rootFiles.Select(item => Path.Combine(item, Path.GetFileName(originalFile))).ToList<string>();
+				}
+				var combiner = new XmlCombiner(originalFile, files, fileNames, notifyCollissions);
 				combiner.Combine(outputPath);
 			}
 			else if (fileFormat == FileFormat.Unknown)
 			{
-				OverrideCombine(originalFile, files, outputPath);
+				OverrideCombine(originalFile, files, outputPath, false);
 			}
 			else if (fileFormat == FileFormat.SmallArchive)
 			{
@@ -126,17 +108,56 @@ namespace Just_Cause_3_Mod_Combiner
 
 		}
 
-		private static void OverrideCombine(string originalFile, IList<string> files, string outputPath)
+		private static void OverrideCombine(string originalFile, IList<string> files, string outputPath, bool binaryCombine)
 		{
+			var items = new List<SelectionItem>();
+			items.Add(new SelectionItem() { Name = "Original", Value = originalFile });
+
+			bool allSameSize = true;
 			var originalBytes = File.ReadAllBytes(originalFile);
-			var replacingBytes = originalBytes;
-			foreach (string file in files)
+			byte[] replacingBytes = null;
+			for (var i = 0; i < files.Count; i++)
 			{
+				var file = files[i];
 				var bytes = File.ReadAllBytes(file);
 				if (!Enumerable.SequenceEqual(bytes, originalBytes))
+				{
 					replacingBytes = bytes;
+					var alreadyFound = false;
+					for (var j = 1; j < items.Count; j++)
+					{
+						if (Enumerable.SequenceEqual(File.ReadAllBytes((string)items[j].Value), bytes))
+						{
+							items[j].Name += "\n" + Path.Combine(rootFiles[i], Path.GetFileName(originalFile));
+						}
+					}
+					if (!alreadyFound)
+						items.Add(new SelectionItem() { Name = Path.Combine(rootFiles[i], Path.GetFileName(originalFile)), Value = file });
+				}
+				if (bytes.Length != originalBytes.Length)
+					allSameSize = false;
 			}
-			File.WriteAllBytes(outputPath, replacingBytes);
+			if (items.Count == 1)
+				return;
+			if (items.Count == 2)
+			{
+				File.WriteAllBytes(outputPath, replacingBytes);
+				return;
+			}
+
+			if (binaryCombine && allSameSize)
+			{
+				BinaryCombiner.Combine(originalFile, files, outputPath, notifyCollissions);
+			}
+			else
+			{
+				object result = null;
+				if (notifyCollissions && SelectionDialog.Show(items, out result, out notifyCollissions))
+				{
+					replacingBytes = File.ReadAllBytes((string)result);
+				}
+				File.WriteAllBytes(outputPath, replacingBytes);
+			}
 		}
 
 	}

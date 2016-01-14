@@ -60,7 +60,7 @@ namespace Just_Cause_3_Mod_Combiner
 			object result = null;
 			bool notifyColl = false;
 			bool dialogResult = false;
-			Settings.mainWindow.Dispatcher.Invoke((System.Windows.Forms.MethodInvoker)delegate
+			Settings.mainWindow.Dispatcher.Invoke((Action)delegate
 			{
 				var dialog = new SelectionDialog(items);
 				dialog.ShowDialog();

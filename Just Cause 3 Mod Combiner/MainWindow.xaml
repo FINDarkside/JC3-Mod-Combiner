@@ -3,9 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 		xmlns:my="clr-namespace:Just_Cause_3_Mod_Combiner"
 		xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-
         Title="Just Cause 3 Mod Combiner" Height="600" Width="900"
-		WindowStartupLocation= "CenterScreen" Closing="Window_Closing">
+		WindowStartupLocation= "CenterScreen" Closing="Window_Closing" Loaded="Window_Loaded">
 
 	<xctk:BusyIndicator Name="busyIndicator" IsBusy="False">
 		<Grid>

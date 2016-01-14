@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
-using System.Windows.Forms;
 
 namespace Just_Cause_3_Mod_Combiner
 {
 	public class Settings
 	{
-		public static int revision = 2;
+		public static int revision = 3;
 		public static string currentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
 		public static string files = Path.Combine(currentPath, "Files");
 		public static string tempFolder = Path.Combine(files, "temp");
@@ -26,10 +22,9 @@ namespace Just_Cause_3_Mod_Combiner
 
 		static Settings()
 		{
-			if (!Directory.Exists(tempFolder))
-			{
-				Directory.CreateDirectory(tempFolder);
-			}
+			Directory.CreateDirectory(tempFolder);
+			Directory.CreateDirectory(defaultFiles);
+
 			var settingsPath = Path.Combine(files, "settings.json");
 			if (File.Exists(settingsPath))
 			{
@@ -66,7 +61,7 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public static void SetBusyContent(string text)
 		{
-			Settings.mainWindow.Dispatcher.BeginInvoke((MethodInvoker)delegate
+			Settings.mainWindow.Dispatcher.BeginInvoke((Action)delegate
 			{
 				Settings.mainWindow.busyIndicator.BusyContent = text;
 			});
@@ -77,7 +72,7 @@ namespace Just_Cause_3_Mod_Combiner
 	public class UserSettings
 	{
 		public string JC3Folder;
-		public bool checkForUpdates;
+		public bool checkForUpdates = true;
 		public List<string> smallArchiveExtensions = new List<string>();
 		public List<string> propertyExtensions = new List<string>();
 		public List<string> adfExtensions = new List<string>();
