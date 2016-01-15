@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace Just_Cause_3_Mod_Combiner
@@ -14,15 +15,14 @@ namespace Just_Cause_3_Mod_Combiner
 		public static void Handle(Exception e, bool showDialog)
 		{
 			if (showDialog)
-				MessageBox.Show(e.ToString(), "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+				ErrorDialog.Show(e.Message, e.ToString());
 			Console.Error.WriteLine(e.ToString());
 		}
 
 		public static void Handle(string message, Exception e)
 		{
-			string s = message + "\n" + e.ToString();
-			MessageBox.Show(s, "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
-			Console.Error.WriteLine(s);
+			ErrorDialog.Show(message, e.Message + "\n" + e.ToString());
+			Console.Error.WriteLine(e.ToString());
 		}
 
 		public static void Alert(string text)

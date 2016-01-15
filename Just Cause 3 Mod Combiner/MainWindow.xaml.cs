@@ -11,6 +11,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Just_Cause_3_Mod_Combiner
 {
@@ -31,8 +32,14 @@ namespace Just_Cause_3_Mod_Combiner
 		public ObservableCollection<Item> Items { get; set; }
 		public bool AdvancedCombine { get; set; }
 
+		private Task runningTask;
+
+
 		public MainWindow()
 		{
+			Settings.mainWindow = this;
+
+
 			if (Settings.user.checkForUpdates && System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
 			{
 				try
@@ -62,11 +69,8 @@ namespace Just_Cause_3_Mod_Combiner
 			{
 				Settings.user = JsonConvert.DeserializeObject<UserSettings>(File.ReadAllText(oldSettings));
 			}
-
-			Settings.mainWindow = this;
 			InitializeComponent();
 			RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.Linear);
-			Settings.local.Save();
 			Title += " r" + Settings.revision;
 
 			if (Settings.user.JC3Folder == null || !Directory.Exists(Settings.user.JC3Folder))
@@ -116,10 +120,9 @@ namespace Just_Cause_3_Mod_Combiner
 			Items = new ObservableCollection<Item>();
 			fileList.Items = Items;
 
-
 		}
 
-		private void AddFile(object sender, RoutedEventArgs e)
+		private async void AddFile(object sender, RoutedEventArgs e)
 		{
 			var dialog = new OpenFileDialog();
 			dialog.CheckFileExists = true;
@@ -129,7 +132,10 @@ namespace Just_Cause_3_Mod_Combiner
 				var files = dialog.FileNames;
 				foreach (var file in files)
 				{
-					fileList.AddFileToList(file);
+					if (await FileFormats.IsKnownFormat(file))
+						fileList.AddFileToList(file);
+					else
+						ErrorDialog.Show("Can't combine " + Path.GetExtension(file) + " files. If you need to combine these let me know at jc3mods.com");
 				}
 			}
 		}
@@ -141,9 +147,20 @@ namespace Just_Cause_3_Mod_Combiner
 
 		private async void CombineClicked(object sender, RoutedEventArgs e)
 		{
+			if (runningTask != null && !runningTask.IsCompleted)
+			{
+				busyIndicator.IsBusy = true;
+				await Task.Run(() =>
+				{
+					runningTask.Wait();
+				});
+				busyIndicator.IsBusy = false;
+			}
+
+
 			if (fileList.Items.Count < 2)
 			{
-				MessageBox.Show("You need to select at least 2 files", "", MessageBoxButton.OK, MessageBoxImage.Error);
+				ErrorDialog.Show("You need to select at least 2 files");
 				return;
 			}
 
@@ -152,14 +169,7 @@ namespace Just_Cause_3_Mod_Combiner
 			{
 				if (Path.GetFileName(item.File) != fileName)
 				{
-
-					MessageBox.Show("All files must have the same name", "Filenames don't match", MessageBoxButton.OK, MessageBoxImage.Error);
-
-				}
-				if (Path.GetExtension(item.File) != Path.GetExtension(fileName))
-				{
-					MessageBox.Show("Files don't have the same extension", "", MessageBoxButton.OK, MessageBoxImage.Error);
-					return;
+					ErrorDialog.Show("All files must have the same name");
 				}
 			}
 
@@ -172,24 +182,17 @@ namespace Just_Cause_3_Mod_Combiner
 				{
 					Combiner.Combine(items, alertCollissions);
 				});
+
 				busyIndicator.IsBusy = false;
 				MessageBox.Show("Combined mod can be found in dropzone folder", "Success", MessageBoxButton.OK, MessageBoxImage.None);
-
 			}
 			catch (Exception ex)
 			{
 				busyIndicator.IsBusy = false;
-				Errors.Handle(ex);
+				Errors.Handle("Failed to combine mods", ex);
 			}
-
-			Task.Run(() =>
-			{
-				var di = new DirectoryInfo(Settings.tempFolder);
-				foreach (FileInfo file in di.GetFiles())
-					file.Delete();
-				foreach (DirectoryInfo dir in di.GetDirectories())
-					dir.Delete(true);
-			});
+			busyIndicator.BusyContent = "Deleting temporary files";
+			runningTask = TempFolder.ClearAsync();
 
 		}
 
@@ -200,28 +203,31 @@ namespace Just_Cause_3_Mod_Combiner
 
 		private async void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			var defaultFilesPath = Path.Combine(Settings.local.lastInstallPath, @"Files\Default files");
-
-			if (Directory.Exists(defaultFilesPath))
+			if (Settings.local.lastRevision < Settings.revision && Settings.local.lastInstallPath != Settings.currentPath)
 			{
-				busyIndicator.IsBusy = true;
-				busyIndicator.BusyContent = "Moving default file cache from " + defaultFilesPath;
-				await Task.Run(() =>
+				var defaultFilesPath = Path.Combine(Settings.local.lastInstallPath, @"Files\Default files");
+
+				if (Directory.Exists(defaultFilesPath))
 				{
-					foreach (var file in Directory.EnumerateFiles(defaultFilesPath, "*", SearchOption.AllDirectories))
+					busyIndicator.IsBusy = true;
+					busyIndicator.BusyContent = "Moving default file cache from " + defaultFilesPath;
+					await Task.Run(() =>
 					{
-						var relativePath = file.Substring(defaultFilesPath.Length + 1);
-						var newPath = Path.Combine(Settings.defaultFiles, relativePath);
-						if (!File.Exists(newPath))
+						foreach (var file in Directory.EnumerateFiles(defaultFilesPath, "*", SearchOption.AllDirectories))
 						{
-							File.Move(file, newPath);
+							var relativePath = file.Substring(defaultFilesPath.Length + 1);
+							var newPath = Path.Combine(Settings.defaultFiles, relativePath);
+							if (!File.Exists(newPath))
+							{
+								File.Move(file, newPath);
+							}
 						}
-					}
-				});
-				busyIndicator.IsBusy = false;
+					});
+					busyIndicator.IsBusy = false;
+				}
 			}
 
-
+			Settings.local.Save();
 		}
 
 

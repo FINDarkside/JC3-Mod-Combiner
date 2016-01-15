@@ -43,6 +43,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -68,21 +69,29 @@
     <Compile Include="Combiners\BinaryCombiner.cs" />
     <Compile Include="Combiners\Combiner.cs" />
     <Compile Include="Combiners\JSONTools.cs" />
-    <Compile Include="Converters\ObjectToBooleanConverter.cs" />
-    <Compile Include="DragDropBox.xaml.cs">
+    <Compile Include="Controls\ErrorDialog.xaml.cs">
+      <DependentUpon>ErrorDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Converters\ObjectToBoolConverter.cs" />
+    <Compile Include="Controls\DragDropBox.xaml.cs">
       <DependentUpon>DragDropBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="Combiners\JSONCombiner.cs" />
     <Compile Include="FileFormats.cs" />
+    <Compile Include="TempFolder.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="GibbedsTools.cs" />
     <Compile Include="DefaultFiles.cs" />
-    <Compile Include="SelectionDialog.xaml.cs">
+    <Compile Include="Controls\SelectionDialog.xaml.cs">
       <DependentUpon>SelectionDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="Combiners\XmlTools.cs" />
     <Compile Include="Settings.cs" />
-    <Page Include="DragDropBox.xaml">
+    <Page Include="Controls\DragDropBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\ErrorDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -100,13 +109,13 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="SelectionDialog.xaml">
+    <Page Include="Controls\SelectionDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="NodeDictionary.cs" />
+    <Compile Include="Combiners\NodeDictionary.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

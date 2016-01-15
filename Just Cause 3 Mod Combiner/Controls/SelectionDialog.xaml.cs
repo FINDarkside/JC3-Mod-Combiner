@@ -56,13 +56,14 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public static bool Show(IList<SelectionItem> items, out object selectedValue, out bool notifyCollissions)
 		{
-			Debug.WriteLine(items.Count);
 			object result = null;
 			bool notifyColl = false;
 			bool dialogResult = false;
 			Settings.mainWindow.Dispatcher.Invoke((Action)delegate
 			{
 				var dialog = new SelectionDialog(items);
+				dialog.Owner = Settings.mainWindow;
+				dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 				dialog.ShowDialog();
 				result = dialog.SelectedItem;
 				notifyColl = dialog.DontShowAgain;

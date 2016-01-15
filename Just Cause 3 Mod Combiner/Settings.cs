@@ -8,10 +8,9 @@ namespace Just_Cause_3_Mod_Combiner
 {
 	public class Settings
 	{
-		public static int revision = 3;
+		public static int revision = 4;
 		public static string currentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
 		public static string files = Path.Combine(currentPath, "Files");
-		public static string tempFolder = Path.Combine(files, "temp");
 		public static string defaultFiles = Path.Combine(files, @"Default files");
 		public static string gibbedsTools = Path.Combine(files, @"Gibbedstools");
 
@@ -22,7 +21,6 @@ namespace Just_Cause_3_Mod_Combiner
 
 		static Settings()
 		{
-			Directory.CreateDirectory(tempFolder);
 			Directory.CreateDirectory(defaultFiles);
 
 			var settingsPath = Path.Combine(files, "settings.json");
@@ -63,6 +61,7 @@ namespace Just_Cause_3_Mod_Combiner
 		{
 			Settings.mainWindow.Dispatcher.BeginInvoke((Action)delegate
 			{
+				Settings.mainWindow.busyIndicator.IsBusy = text != null;
 				Settings.mainWindow.busyIndicator.BusyContent = text;
 			});
 		}
@@ -92,6 +91,8 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public void Save()
 		{
+			this.lastInstallPath = Settings.currentPath;
+			this.lastRevision = Settings.revision;
 			var json = JsonConvert.SerializeObject(this);
 			var localPath = Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), "JC3 Mod Combiner");
 			var localDataPath = Path.Combine(localPath, "data.json");

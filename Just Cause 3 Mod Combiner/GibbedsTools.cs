@@ -4,8 +4,16 @@ using System.IO;
 
 namespace Just_Cause_3_Mod_Combiner
 {
+
 	public class GibbedsTools
 	{
+
+		public enum ConvertMode
+		{
+			Import,
+			Export,
+			Unknown
+		}
 
 		public static string convertProperty = Path.Combine(Settings.gibbedsTools, "Gibbed.JustCause3.ConvertProperty.exe");
 		public static string smallPack = Path.Combine(Settings.gibbedsTools, "Gibbed.JustCause3.SmallPack.exe");
@@ -16,12 +24,13 @@ namespace Just_Cause_3_Mod_Combiner
 		public static string ConvertProperty(string inputPath)
 		{
 			string outputPath = Path.ChangeExtension(inputPath, inputPath.EndsWith(".xml") ? ".bin" : ".xml");
-			return ConvertProperty(inputPath, outputPath);
+			return ConvertProperty(inputPath, outputPath, ConvertMode.Unknown);
 		}
 
-		public static string ConvertProperty(string inputPath, string outputPath)
+		public static string ConvertProperty(string inputPath, string outputPath, ConvertMode mode)
 		{
-			Run(convertProperty, "\"" + inputPath + "\" \"" + outputPath + "\"");
+			string extraArg = mode != ConvertMode.Unknown ? (mode == ConvertMode.Import ? "--i" : "--e") : "";
+			Run(convertProperty, "\"" + inputPath + "\" \"" + outputPath + "\" " + extraArg);
 
 			if (File.Exists(outputPath))
 				return outputPath;
@@ -66,7 +75,7 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public static string ConvertAdf(string inputPath, string outputPath)
 		{
-			Run(convertAdf, "\"" + inputPath + "\" \"" + outputPath + "\"");
+			Run(convertAdf, "\"" + inputPath + "\" \"" + outputPath + "\" --e");
 
 			if (File.Exists(outputPath))
 				return outputPath;
@@ -112,7 +121,7 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public static bool CanConvert(string inputPath, string exe)
 		{
-			var outputPath = Path.Combine(Settings.tempFolder, "CanConvert", Path.GetFileName(inputPath));
+			var outputPath = TempFolder.GetTempFile();
 			Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 			var proc = new Process
 			{

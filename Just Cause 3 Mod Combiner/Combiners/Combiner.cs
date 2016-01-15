@@ -41,21 +41,18 @@ namespace Just_Cause_3_Mod_Combiner
 			Settings.SetBusyContent("Combining " + Path.GetFileName(originalFile));
 			if (fileFormat == FileFormat.Property)
 			{
-				int combineCount = 0;
 
-				var originalXml = GibbedsTools.ConvertProperty(originalFile, Path.Combine(Settings.tempFolder, Path.GetFileNameWithoutExtension(originalFile) + "_" + combineCount + ".xml"));
-				combineCount++;
+				var originalXml = GibbedsTools.ConvertProperty(originalFile, TempFolder.GetTempFile(), GibbedsTools.ConvertMode.Export);
 
 				var xmlFiles = new List<string>();
 				foreach (string file in files)
 				{
-					xmlFiles.Add(GibbedsTools.ConvertProperty(file, Path.Combine(Settings.tempFolder, Path.GetFileNameWithoutExtension(file) + "_" + combineCount + ".xml")));
-					combineCount++;
+					xmlFiles.Add(GibbedsTools.ConvertProperty(file, TempFolder.GetTempFile(), GibbedsTools.ConvertMode.Export));
 				}
 
 				var combiner = new XmlCombiner(originalXml, xmlFiles, rootFiles, notifyCollissions);
 				combiner.Combine(originalXml);
-				GibbedsTools.ConvertProperty(originalXml, outputPath);
+				GibbedsTools.ConvertProperty(originalXml, outputPath, GibbedsTools.ConvertMode.Import);
 			}
 			else if (fileFormat == FileFormat.Adf)
 			{
@@ -80,13 +77,13 @@ namespace Just_Cause_3_Mod_Combiner
 				Settings.SetBusyContent("Unpacking " + Path.GetFileName(originalFile));
 				int combineCount = 0;
 
-				var originalUnpacked = GibbedsTools.SmallUnpack(originalFile, Path.Combine(Settings.tempFolder, Path.GetFileNameWithoutExtension(originalFile) + "_" + combineCount));
+				var originalUnpacked = GibbedsTools.SmallUnpack(originalFile, TempFolder.GetTempFile());
 				combineCount++;
 
 				var unpackedFiles = new List<string>();
 				foreach (string file in files)
 				{
-					unpackedFiles.Add(GibbedsTools.SmallUnpack(file, Path.Combine(Settings.tempFolder, Path.GetFileNameWithoutExtension(file) + "_" + combineCount)));
+					unpackedFiles.Add(GibbedsTools.SmallUnpack(file, TempFolder.GetTempFile()));
 					combineCount++;
 				}
 				foreach (string file in Directory.GetFiles(originalUnpacked, "*", SearchOption.AllDirectories))

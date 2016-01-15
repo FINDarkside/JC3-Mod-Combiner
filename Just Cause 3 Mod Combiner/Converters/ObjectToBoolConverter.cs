@@ -4,7 +4,7 @@ using System.Windows.Data;
 
 namespace Just_Cause_3_Mod_Combiner
 {
-	public class ObjectToBooleanConverter : IValueConverter
+	public class ObjectToBoolConverter : IValueConverter
 	{
 		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
 		{

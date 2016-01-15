@@ -2,13 +2,11 @@ Show the right file breadcrumbs in SelectionDialog
 Center all dialogs
 SelectionDialog null or combine these
 Set SelectionDialog Headers
-New error dialog
 Match multiple original files
 Find original files by hash
 Rewrite xml combiner
+Make task to wait only when needed
 
-
-FIX THE FUCKING CONVERTER
 
 ?:
 Copy default file cache
@@ -22,3 +20,5 @@ Combine all files
 Make unpack accept regex
 Check for updates
 Tell user that combined mod is in dropzone
+FIX THE FUCKING CONVERTER
+New error dialog

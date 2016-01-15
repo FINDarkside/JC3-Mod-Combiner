@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Just_Cause_3_Mod_Combiner
 {
@@ -76,6 +77,19 @@ namespace Just_Cause_3_Mod_Combiner
 			System.Diagnostics.Debug.WriteLine(String.Join("\", \"", unknownExtensions));
 
 			return FileFormat.Unknown;
+		}
+
+		public static async Task<bool> IsKnownFormat(string file)
+		{
+			Settings.SetBusyContent("Determining file format for " + Path.GetFileName(file));
+			FileFormat format = FileFormat.Unknown;
+			await Task.Run(() =>
+			{
+				format = FileFormats.GetFileFormat(file);
+			});
+			Settings.SetBusyContent(null);
+
+			return format != FileFormat.Unknown;
 		}
 	}
 }

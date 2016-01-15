@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Interop;
 
 namespace Just_Cause_3_Mod_Combiner
 {
@@ -46,6 +49,7 @@ namespace Just_Cause_3_Mod_Combiner
 
 			return true;
 		}
+
 
 
 	}

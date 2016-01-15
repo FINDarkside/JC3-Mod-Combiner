@@ -57,7 +57,7 @@ namespace Just_Cause_3_Mod_Combiner
 				string tabFile = Path.Combine(Path.GetDirectoryName(rightFileList), "game" + num + ".tab");
 
 				//TODO: handle?
-				var outputPath = Path.Combine(Settings.tempFolder, Path.GetFileNameWithoutExtension(tabFile));
+				var outputPath = TempFolder.GetTempFile();
 				Debug.WriteLine("Find in " + tabFile);
 				string extractedFolder = GibbedsTools.Unpack(tabFile, outputPath, fileName.Replace(".", "\\."));
 

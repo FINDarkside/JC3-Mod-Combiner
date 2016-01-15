@@ -2,6 +2,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -57,13 +58,8 @@ namespace Just_Cause_3_Mod_Combiner
 			fileList.ItemContainerStyle = style;
 		}
 
-		public void AddFileToList(string file)
+		public async void AddFileToList(string file)
 		{
-			if (FileFormats.GetFileFormat(file) == FileFormat.Unknown)
-			{
-				Errors.Alert("Can't combine " + Path.GetExtension(file) + " files. If you need to combine these let me know at jc3mods.com");
-				return;
-			}
 			if (File.Exists(file))
 			{
 				foreach (Item item in Items)
@@ -100,23 +96,6 @@ namespace Just_Cause_3_Mod_Combiner
 			if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effects = DragDropEffects.Move;
 		}
 
-		private void AddFile(object sender, RoutedEventArgs e)
-		{
-			var dialog = new OpenFileDialog();
-			dialog.CheckFileExists = true;
-			dialog.Filter = "Bin files|*.bin";
-			dialog.Multiselect = true;
-			if (dialog.ShowDialog() == true)
-			{
-				var files = dialog.FileNames;
-				foreach (var file in files)
-				{
-					AddFileToList(file);
-				}
-			}
-
-		}
-
 		private void ListBox_PreviewMouseMove(object sender, MouseEventArgs e)
 		{
 			if (Items.Count == 0)
@@ -145,14 +124,17 @@ namespace Just_Cause_3_Mod_Combiner
 
 		}
 
-		private void ListBox_Drop(object sender, DragEventArgs e)
+		private async void ListBox_Drop(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent(DataFormats.FileDrop))
 			{
 				string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 				foreach (string file in files)
 				{
-					AddFileToList(file);
+					if(await FileFormats.IsKnownFormat(file))
+						AddFileToList(file);
+					else
+						ErrorDialog.Show("Can't combine " + Path.GetExtension(file) + " files. If you need to combine these let me know at jc3mods.com");
 				}
 			}
 			else if (e.Data.GetData(typeof(Item)) != null)
