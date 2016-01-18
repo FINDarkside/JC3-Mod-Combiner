@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Newtonsoft.Json;
+using System.Windows;
 
 namespace Just_Cause_3_Mod_Combiner
 {

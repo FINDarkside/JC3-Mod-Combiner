@@ -43,6 +43,7 @@ namespace Just_Cause_3_Mod_Combiner
 				docElems[i] = docs[i].DocumentElement;
 			}
 			RecursiveCombine2(originalDoc.DocumentElement, docElems);
+			System.Diagnostics.Debug.WriteLine(XmlTools.GetOuterXml(originalDoc.DocumentElement));
 
 			var dir = Path.GetDirectoryName(newFileLocation);
 			if (!Directory.Exists(dir))

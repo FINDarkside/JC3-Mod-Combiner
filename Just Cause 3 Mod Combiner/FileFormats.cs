@@ -81,6 +81,10 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public static async Task<bool> IsKnownFormat(string file)
 		{
+			if (Path.GetExtension(file) == "")
+			{
+				return false;
+			}
 			Settings.SetBusyContent("Determining file format for " + Path.GetFileName(file));
 			FileFormat format = FileFormat.Unknown;
 			await Task.Run(() =>

@@ -1,12 +1,12 @@
 Show the right file breadcrumbs in SelectionDialog
-Center all dialogs
 SelectionDialog null or combine these
 Set SelectionDialog Headers
 Match multiple original files
-Find original files by hash
+Find original files by hash and size
 Rewrite xml combiner
-Make task to wait only when needed
-
+Tell user not to add folders
+Center all dialogs?
+MAKE A FAQ
 
 ?:
 Copy default file cache
@@ -22,3 +22,6 @@ Check for updates
 Tell user that combined mod is in dropzone
 FIX THE FUCKING CONVERTER
 New error dialog
+Center error dialogs
+Fix error with missing dlc folder
+Make task to wait only when needed

@@ -34,11 +34,9 @@ namespace Just_Cause_3_Mod_Combiner
 
 		private Task runningTask;
 
-
 		public MainWindow()
 		{
 			Settings.mainWindow = this;
-
 
 			if (Settings.user.checkForUpdates && System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
 			{
@@ -132,6 +130,11 @@ namespace Just_Cause_3_Mod_Combiner
 				var files = dialog.FileNames;
 				foreach (var file in files)
 				{
+					if (Directory.Exists(file))
+					{
+						ErrorDialog.Show("Can't combine directories");
+						continue;
+					}
 					if (await FileFormats.IsKnownFormat(file))
 						fileList.AddFileToList(file);
 					else
@@ -184,7 +187,7 @@ namespace Just_Cause_3_Mod_Combiner
 				});
 
 				busyIndicator.IsBusy = false;
-				MessageBox.Show("Combined mod can be found in dropzone folder", "Success", MessageBoxButton.OK, MessageBoxImage.None);
+				MessageBox.Show(this, "Combined mod can be found in dropzone folder", "Success", MessageBoxButton.OK, MessageBoxImage.None);
 			}
 			catch (Exception ex)
 			{

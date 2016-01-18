@@ -131,6 +131,11 @@ namespace Just_Cause_3_Mod_Combiner
 				string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 				foreach (string file in files)
 				{
+					if (Directory.Exists(file))
+					{
+						ErrorDialog.Show("Can't combine directories");
+						continue;
+					}
 					if(await FileFormats.IsKnownFormat(file))
 						AddFileToList(file);
 					else

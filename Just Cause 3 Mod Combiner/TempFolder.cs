@@ -28,7 +28,7 @@ namespace Just_Cause_3_Mod_Combiner
 				}
 				result = Path.Combine(path, sb.ToString());
 				Next();
-			} while (Array.IndexOf(illegal, result) != -1 && File.Exists(result));
+			} while (Array.IndexOf(illegal, result) != -1 || File.Exists(result));
 			return result;
 		}
 
