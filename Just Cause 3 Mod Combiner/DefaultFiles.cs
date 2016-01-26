@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -8,32 +9,53 @@ namespace Just_Cause_3_Mod_Combiner
 {
 	public static class DefaultFiles
 	{
+		public class DefaultFileInformation
+		{
+			public string relativePath;
+			public string hash;
+			public int size;
+			public string tabFile;
+
+			public DefaultFileInformation(string line, string tabFile)
+			{
+				string[] splitLine = line.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+				size = Convert.ToInt32(splitLine[2], 16);
+				hash = splitLine[0].Substring(2);
+				relativePath = splitLine[4];
+				this.tabFile = tabFile;
+			}
+		}
+
 		public static string GetFile(string fileName)
 		{
+			Settings.SetBusyContent("Finding default files for " + fileName + "...");
 
-			var matches = Directory.GetFiles(Settings.defaultFiles, fileName, SearchOption.AllDirectories);
-			if (matches.Length != 0)
+			var result = new List<string>();
+			var cachedFiles = Directory.EnumerateFiles(Settings.defaultFiles, Path.GetFileNameWithoutExtension(fileName) + "_*" + Path.GetExtension(fileName), SearchOption.AllDirectories);
+			foreach (var file in cachedFiles)
 			{
-				return matches[0];
+				result.Add(file);
 			}
-
 			//Find file from jc3 folders
 
-			Settings.SetBusyContent("Extracting default files from Just Cause 3 archives...");
-
 			var fileLists = new List<string>();
-			/*var patchFileLists = Directory.EnumerateFiles(Path.Combine(Settings.user.JC3Folder, "patch_win64")).Where(name => Regex.IsMatch(name, "game_hash_names[0-9]+\\.txt")).ToList<string>();
-			patchFileLists = patchFileLists.OrderBy(s => -int.Parse(Path.GetFileNameWithoutExtension(s).Substring(15))).ToList<string>(); //Sort descending order, to take the file from the latest patch
-			fileLists.AddRange(Directory.EnumerateFiles(Path.Combine(Settings.user.JC3Folder, "dlc"), "*", SearchOption.AllDirectories).Where(name => Regex.IsMatch(name, "game_hash_names[0-9]+\\.txt")));
-			fileLists.AddRange(Directory.EnumerateFiles(Path.Combine(Settings.user.JC3Folder, "archives_win64")).Where(name => Regex.IsMatch(name, "game_hash_names[0-9]+\\.txt")));*/
-
-			fileLists.AddRange(Directory.EnumerateFiles(Path.Combine(Settings.user.JC3Folder, "archives_win64")).Where(name => Regex.IsMatch(name, "game_hash_names[0-9]+\\.txt")));
+			fileLists.AddRange(Directory.EnumerateFiles(Path.Combine(Settings.user.JC3Folder, "archives_win64"), "*" , SearchOption.AllDirectories).Where(name => Regex.IsMatch(name, "game_hash_names[0-9]+\\.txt")));
+			fileLists = fileLists.OrderBy(s => int.Parse(Path.GetFileNameWithoutExtension(s).Substring(15))).ToList<string>();
 			if (Directory.Exists(Path.Combine(Settings.user.JC3Folder, "dlc")))
-				fileLists.AddRange(Directory.EnumerateFiles(Path.Combine(Settings.user.JC3Folder, "dlc"), "*", SearchOption.AllDirectories).Where(name => Regex.IsMatch(name, "game_hash_names[0-9]+\\.txt")));
+			{
+				var dlcFileLists = Directory.EnumerateFiles(Path.Combine(Settings.user.JC3Folder, "dlc"), "*", SearchOption.AllDirectories).Where(name => Regex.IsMatch(name, "game_hash_names[0-9]+\\.txt")).ToList<string>();
+				dlcFileLists = dlcFileLists.OrderBy(s => int.Parse(Path.GetFileNameWithoutExtension(s).Substring(15))).ToList<string>();
+				fileLists.AddRange(dlcFileLists);
+			}
 			if (Directory.Exists(Path.Combine(Settings.user.JC3Folder, "patch_win64")))
-				fileLists.AddRange(Directory.EnumerateFiles(Path.Combine(Settings.user.JC3Folder, "patch_win64")).Where(name => Regex.IsMatch(name, "game_hash_names[0-9]+\\.txt")).ToList<string>());
+			{
+				var patchFileLists = Directory.EnumerateFiles(Path.Combine(Settings.user.JC3Folder, "patch_win64")).Where(name => Regex.IsMatch(name, "game_hash_names[0-9]+\\.txt")).ToList<string>();
+				patchFileLists = patchFileLists.OrderBy(s => int.Parse(Path.GetFileNameWithoutExtension(s).Substring(15))).ToList<string>();
+				fileLists.AddRange(patchFileLists);
+			}
 
-			var rightFileLists = new List<string>();
+
+			var fileInfos = new List<DefaultFileInformation>();
 			foreach (string fileList in fileLists)
 			{
 				string[] lines = File.ReadAllLines(fileList);
@@ -41,48 +63,51 @@ namespace Just_Cause_3_Mod_Combiner
 				{
 					if (line.Contains(fileName))
 					{
-						rightFileLists.Add(fileList);
-						break;
+
+						string num = Path.GetFileName(fileList).Substring(15, Path.GetFileName(fileList).Length - 15 - 4);
+						string tabFile = Path.Combine(Path.GetDirectoryName(fileList), "game" + num + ".tab");
+						fileInfos.Add(new DefaultFileInformation(line, tabFile));
 					}
 				}
 			}
 
-			if (rightFileLists.Count == 0)
+			if (result.Count == fileInfos.Count)
 			{
-				return null;
+				return result[0]; //return result;
 			}
 
-			var defaultFiles = new List<string>();
-			foreach (string rightFileList in rightFileLists)
+			foreach (string file in result)
 			{
+				File.Delete(file);
+			}
 
-				string num = Path.GetFileName(rightFileList).Substring(15, Path.GetFileName(rightFileList).Length - 15 - 4);
-				string tabFile = Path.Combine(Path.GetDirectoryName(rightFileList), "game" + num + ".tab");
+			Settings.SetBusyContent("Extracting default files from Just Cause 3 archives...");
 
-				//TODO: handle?
+			foreach (var fileInfo in fileInfos)
+			{
 				var outputPath = TempFolder.GetTempFile();
-				Debug.WriteLine("Find in " + tabFile);
-				string extractedFolder = GibbedsTools.Unpack(tabFile, outputPath, fileName.Replace(".", "\\."));
+				string extractedFolder = GibbedsTools.Unpack(fileInfo.tabFile, outputPath, fileInfo.hash + "\\.*");
 
 				if (extractedFolder == null)
-					return null;
+					continue;
 
-				foreach (string file in Directory.GetFiles(extractedFolder, fileName, SearchOption.AllDirectories))
+				var files = Directory.EnumerateFiles(extractedFolder, fileInfo.hash + ".*", SearchOption.AllDirectories);
+				foreach (string file in files)
 				{
-					string newPath = Path.Combine(Settings.defaultFiles, file.Substring(outputPath.Length + 1));
+					if (new FileInfo(file).Length != fileInfo.size)
+						continue;
+					string newPath = Path.Combine(Settings.defaultFiles, fileInfo.relativePath);
+					newPath = Util.GetUniqueFile(newPath);
+
 					if (!Directory.Exists(Path.GetDirectoryName(newPath)))
 						Directory.CreateDirectory(Path.GetDirectoryName(newPath));
-					if (File.Exists(newPath))
-						File.Delete(newPath);
 					File.Move(file, newPath);
 					if (File.Exists(newPath))
-						defaultFiles.Add(newPath);
+						result.Add(newPath);
+					break;
 				}
 			}
-			if (defaultFiles.Count > 0)
-				return defaultFiles[0];
-			return null;
+			return result[0];
 		}
-
 	}
 }

@@ -58,7 +58,7 @@ namespace Just_Cause_3_Mod_Combiner
 			fileList.ItemContainerStyle = style;
 		}
 
-		public async void AddFileToList(string file)
+		public void AddFileToList(string file)
 		{
 			if (File.Exists(file))
 			{

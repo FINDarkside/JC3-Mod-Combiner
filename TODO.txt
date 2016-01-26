@@ -1,13 +1,14 @@
 Show the right file breadcrumbs in SelectionDialog
-SelectionDialog null or combine these
 Set SelectionDialog Headers
-Match multiple original files
-Find original files by hash and size
-Rewrite xml combiner
 Tell user not to add folders
 Center all dialogs?
 MAKE A FAQ
 No permissions to file exception
+Check if owrks from different drive 
+
+Match multiple original files
+Rewrite xml combiner
+SelectionDialog null or combine these
 
 ?:
 Copy default file cache
@@ -26,3 +27,4 @@ New error dialog
 Center error dialogs
 Fix error with missing dlc folder
 Make task to wait only when needed
+Find original files by hash and size

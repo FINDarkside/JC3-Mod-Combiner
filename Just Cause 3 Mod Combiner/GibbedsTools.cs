@@ -90,8 +90,7 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public static string Unpack(string inputPath, string outputPath, string regex)
 		{
-			Debug.WriteLine("\"" + inputPath + "\" \"" + outputPath + "\" --nu" + (regex != null ? " -f:" + regex : ""));
-			Run(unpack, "\"" + inputPath + "\" \"" + outputPath + "\" --nu" + (regex != null ? " -f:" + regex : "" ));
+			Run(unpack, "\"" + inputPath + "\" \"" + outputPath + "\"" + (regex != null ? " -f:" + regex : "" ));
 
 			if (Directory.Exists(outputPath))
 				return outputPath;

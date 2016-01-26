@@ -11,15 +11,15 @@ namespace Just_Cause_3_Mod_Combiner
 {
 	static class Util
 	{
-		public static Task WaitForExitAsync(this Process process, CancellationToken cancellationToken = default(CancellationToken))
+		public static string GetUniqueFile(string preferredFile)
 		{
-			var tcs = new TaskCompletionSource<object>();
-			process.EnableRaisingEvents = true;
-			process.Exited += (sender, args) => tcs.TrySetResult(null);
-			if (cancellationToken != default(CancellationToken))
-				cancellationToken.Register(tcs.SetCanceled);
-
-			return tcs.Task;
+			int num = 1;
+			string result = null;
+			do{
+				var ext = Path.GetExtension(preferredFile);
+				result = Path.Combine(Path.GetDirectoryName(preferredFile) ,Path.GetFileNameWithoutExtension(preferredFile) + "_" + num + ext);
+			} while (File.Exists(result));
+			return result;
 		}
 
 		const int BYTES_TO_READ = sizeof(Int64);

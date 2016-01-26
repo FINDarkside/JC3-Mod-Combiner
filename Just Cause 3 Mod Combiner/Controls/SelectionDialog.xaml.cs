@@ -54,7 +54,7 @@ namespace Just_Cause_3_Mod_Combiner
 			this.DataContext = this;
 		}
 
-		public static bool Show(IList<SelectionItem> items, out object selectedValue, out bool notifyCollissions)
+		public static bool Show(string header ,IList<SelectionItem> items, out object selectedValue, out bool notifyCollissions)
 		{
 			object result = null;
 			bool notifyColl = false;
@@ -62,6 +62,7 @@ namespace Just_Cause_3_Mod_Combiner
 			Settings.mainWindow.Dispatcher.Invoke((Action)delegate
 			{
 				var dialog = new SelectionDialog(items);
+				dialog.tbHeader.Text = header;
 				dialog.Owner = Settings.mainWindow;
 				dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 				dialog.ShowDialog();

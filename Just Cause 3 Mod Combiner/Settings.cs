@@ -9,7 +9,7 @@ namespace Just_Cause_3_Mod_Combiner
 {
 	public class Settings
 	{
-		public static int revision = 4;
+		public static int revision = 5;
 		public static string currentPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
 		public static string files = Path.Combine(currentPath, "Files");
 		public static string defaultFiles = Path.Combine(files, @"Default files");

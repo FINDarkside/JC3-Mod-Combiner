@@ -69,6 +69,7 @@
     <Compile Include="Combiners\BinaryCombiner.cs" />
     <Compile Include="Combiners\Combiner.cs" />
     <Compile Include="Combiners\JSONTools.cs" />
+    <Compile Include="Combiners\XmlCombiner2.cs" />
     <Compile Include="Controls\ErrorDialog.xaml.cs">
       <DependentUpon>ErrorDialog.xaml</DependentUpon>
     </Compile>

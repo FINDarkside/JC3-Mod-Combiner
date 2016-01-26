@@ -30,7 +30,6 @@ namespace Just_Cause_3_Mod_Combiner
 				throw new Exception("Couldn't find default file for " + Path.GetFileName(files[0]));
 			}
 			var outputPath = Path.Combine(Settings.user.JC3Folder, "dropzone", originalFile.Substring(Settings.defaultFiles.Length + 1));
-			Debug.WriteLine(outputPath);
 			Combine(originalFile, fileFormat, files, outputPath);
 
 		}
@@ -149,7 +148,7 @@ namespace Just_Cause_3_Mod_Combiner
 			else
 			{
 				object result = null;
-				if (notifyCollissions && SelectionDialog.Show(items, out result, out notifyCollissions))
+				if (notifyCollissions && SelectionDialog.Show("Select overriding file",items, out result, out notifyCollissions))
 				{
 					replacingBytes = File.ReadAllBytes((string)result);
 				}

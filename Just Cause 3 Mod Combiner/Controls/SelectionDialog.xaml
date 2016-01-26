@@ -11,11 +11,11 @@
 	<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
 		<Grid Margin="5">
 			<Grid.RowDefinitions>
-				<RowDefinition Height="26"></RowDefinition>
+				<RowDefinition Height="auto"></RowDefinition>
 				<RowDefinition Height="*"></RowDefinition>
 				<RowDefinition Height="auto"></RowDefinition>
 			</Grid.RowDefinitions>
-			<TextBlock Grid.Row="0"  Height="20" VerticalAlignment="Center" Name="tbHeader"></TextBlock>
+			<TextBlock Grid.Row="0"  Height="20" VerticalAlignment="Center" Name="tbHeader" TextAlignment="Center"></TextBlock>
 			<ItemsControl Grid.Row="1" Name="icCollissions" Background="White" ItemsSource="{Binding Items}">
 				<ItemsControl.ItemTemplate>
 					<DataTemplate>

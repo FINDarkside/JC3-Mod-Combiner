@@ -43,7 +43,6 @@ namespace Just_Cause_3_Mod_Combiner
 				docElems[i] = docs[i].DocumentElement;
 			}
 			RecursiveCombine2(originalDoc.DocumentElement, docElems);
-			System.Diagnostics.Debug.WriteLine(XmlTools.GetOuterXml(originalDoc.DocumentElement));
 
 			var dir = Path.GetDirectoryName(newFileLocation);
 			if (!Directory.Exists(dir))
@@ -135,7 +134,7 @@ namespace Just_Cause_3_Mod_Combiner
 						//TODO:Clean ^?
 						var overridingNode = changeNodes[changeNodes.Count - 1];
 						object result = null;
-						if (uniqueChanges.Count > 1 && notifyCollissions && SelectionDialog.Show(items, out result, out notifyCollissions))
+						if (uniqueChanges.Count > 1 && notifyCollissions && SelectionDialog.Show("Collission at ?", items, out result, out notifyCollissions))
 						{
 							overridingNode = result as XmlNode;
 						}
@@ -194,7 +193,7 @@ namespace Just_Cause_3_Mod_Combiner
 						//Fix to ask if continue combine or not
 						var continueCombining = true;
 						object result = null;
-						if (notifyCollissions && SelectionDialog.Show(items, out result, out notifyCollissions))
+						if (notifyCollissions && SelectionDialog.Show("?", items, out result, out notifyCollissions))
 						{
 							if (result == null)
 								continueCombining = false;
@@ -337,7 +336,7 @@ namespace Just_Cause_3_Mod_Combiner
 				}
 
 				object result = null;
-				if (notifyCollissions && SelectionDialog.Show(items, out result, out notifyCollissions))
+				if (notifyCollissions && SelectionDialog.Show("?", items, out result, out notifyCollissions))
 				{
 					overridingNode = result as XmlNode;
 				}

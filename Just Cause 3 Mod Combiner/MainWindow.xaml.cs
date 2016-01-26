@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Xml;
 
 namespace Just_Cause_3_Mod_Combiner
 {
@@ -38,6 +39,14 @@ namespace Just_Cause_3_Mod_Combiner
 		{
 			Settings.mainWindow = this;
 
+			AppDomain currentDomain = AppDomain.CurrentDomain;
+			currentDomain.UnhandledException += new UnhandledExceptionEventHandler((object sender, UnhandledExceptionEventArgs args) =>
+			{
+				File.WriteAllText(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "crash.txt"), args.ExceptionObject.ToString());
+				Application.Current.Shutdown();
+			});
+
+#if !DEBUG
 			if (Settings.user.checkForUpdates && System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
 			{
 				try
@@ -61,6 +70,7 @@ namespace Just_Cause_3_Mod_Combiner
 					Errors.Handle("Failed to check for new version", e);
 				}
 			}
+#endif
 
 			var oldSettings = Path.Combine(Settings.local.lastInstallPath, @"Files\settings.json");
 			if (File.Exists(oldSettings))
@@ -150,6 +160,56 @@ namespace Just_Cause_3_Mod_Combiner
 
 		private async void CombineClicked(object sender, RoutedEventArgs e)
 		{
+
+			var result2 = new XmlDocument();
+
+			var originalDocs = new List<XmlDocument>();
+			var docs = new List<XmlDocument>();
+			var breadcrumbs = new List<string>() { "TESTSHIT", "Test2" };
+
+			var doc = new XmlDocument();
+			doc.LoadXml(@"<note>
+							<value id=""A"">Tove</value>
+							<value id=""B"">Jani</value>
+							<value id=""C"">Reminder</value>
+							<value id=""D"">Don't forget me this weekend!</value>
+						</note>");
+			result2 = doc;
+
+			doc = new XmlDocument();
+			doc.LoadXml(@"<note>
+							<value id=""A"">Tove</value>
+							<value id=""B"">Jani</value>
+							<value id=""C"">Reminder</value>
+							<value id=""D"">Don't forget me this weekend!</value>
+						</note>");
+
+			originalDocs.Add(doc);
+
+			doc = new XmlDocument();
+			doc.LoadXml(@"<note>
+							<value id=""A"">Test sdf</value>
+							<value id=""B"">Jani</value>
+							<value id=""C"">Reminder</value>
+							<value id=""D"">Don't forget me this weekend!</value>
+						</note>");
+
+			docs.Add(doc);
+
+			doc = new XmlDocument();
+			doc.LoadXml(@"<note>
+							<value id=""A"">test2</value>
+							<value id=""B"">Jani</value>
+							<value id=""D"">Don't forget me this weekend!</value>
+						</note>");
+
+			docs.Add(doc);
+
+			XmlCombiner2.Combine(result2, originalDocs, docs, breadcrumbs, true);
+
+
+			//
+
 			if (runningTask != null && !runningTask.IsCompleted)
 			{
 				busyIndicator.IsBusy = true;
@@ -206,7 +266,7 @@ namespace Just_Cause_3_Mod_Combiner
 
 		private async void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			if (Settings.local.lastRevision < Settings.revision && Settings.local.lastInstallPath != Settings.currentPath)
+			if (Settings.local.lastRevision >= 4 && Settings.local.lastRevision < Settings.revision && Settings.local.lastInstallPath != Settings.currentPath)
 			{
 				var defaultFilesPath = Path.Combine(Settings.local.lastInstallPath, @"Files\Default files");
 

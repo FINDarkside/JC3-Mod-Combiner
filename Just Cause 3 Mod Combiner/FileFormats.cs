@@ -74,8 +74,6 @@ namespace Just_Cause_3_Mod_Combiner
 			unknownExtensions.Add(extension);
 			Settings.user.unknownExtensions.Add(extension);
 
-			System.Diagnostics.Debug.WriteLine(String.Join("\", \"", unknownExtensions));
-
 			return FileFormat.Unknown;
 		}
 
