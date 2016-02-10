@@ -1,442 +1,346 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Xml;
+using System.Linq;
+using System.Diagnostics;
 
 namespace Just_Cause_3_Mod_Combiner
 {
-	public class XmlCombiner
+	public static class XmlCombiner
 	{
-		private XmlDocument originalDoc;
-		private XmlDocument[] docs;
-		private string[] fileNames;
-		private bool notifyCollissions;
+		public static bool notifyCollissions;
 
-		public XmlCombiner(string originalFile, IList<string> files, IList<string> binFiles, bool notifyCollissions)
+		public static void Combine(List<string> originalFiles, List<string> files, List<string> breadcrumbs, bool notifyCollissions, string outputPath)
 		{
-			this.fileNames = binFiles.ToArray<string>();
-			docs = new XmlDocument[files.Count];
-			int i = 0;
-			foreach (string file in files)
-			{
-				docs[i] = XmlTools.LoadDocument(file);
-				i++;
-			}
-			this.originalDoc = XmlTools.LoadDocument(originalFile);
-			this.notifyCollissions = notifyCollissions;
+
+			XmlCombiner.notifyCollissions = notifyCollissions;
+
+
+			var result = XmlTools.LoadDocument(originalFiles[originalFiles.Count - 1]);
+			var originalDocElems = originalFiles.Select(file => (XmlNode)XmlTools.LoadDocument(file).DocumentElement).ToList();
+			var docElems = files.Select(file => (XmlNode)XmlTools.LoadDocument(file).DocumentElement).ToList();
+
+			RecursiveCombine(result.DocumentElement, originalDocElems, docElems, breadcrumbs);
+
+			File.Delete(outputPath);
+			Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+			result.Save(outputPath);
 		}
 
-		public XmlCombiner(XmlDocument originalDoc, IEnumerable<XmlDocument> docs, bool notifyCollissions)
+		public static void Combine(XmlDocument result, List<XmlDocument> originalDocs, List<XmlDocument> docs, List<string> breadcrumbs)
 		{
-			this.originalDoc = originalDoc;
-			this.docs = docs.ToArray<XmlDocument>();
-			this.notifyCollissions = notifyCollissions;
+			notifyCollissions = false;
+			
+			var docElems = new List<XmlNode>(docs.Count);
+			var originalDocElems = new List<XmlNode>(originalDocs.Count);
+
+			foreach (XmlDocument file in docs)
+			{
+				docElems.Add(file.DocumentElement);
+			}
+			foreach (XmlDocument file in originalDocs)
+			{
+				originalDocElems.Add(file.DocumentElement);
+			}
+
+			RecursiveCombine(result.DocumentElement, originalDocElems, docElems, breadcrumbs);
+			System.Diagnostics.Debug.WriteLine(XmlTools.GetOuterXml(result.DocumentElement));
 		}
 
-		public void Combine(string newFileLocation)
+
+		private static void RecursiveCombine(XmlNode result, List<XmlNode> originalNodes, List<XmlNode> nodes, List<string> breadcrumbs)
 		{
 
-			var docElems = new XmlNode[docs.Length];
-			for (var i = 0; i < docs.Length; i++)
+			if (result.NodeType == XmlNodeType.Text)
 			{
-				docElems[i] = docs[i].DocumentElement;
-			}
-			RecursiveCombine2(originalDoc.DocumentElement, docElems);
+				System.Diagnostics.Debug.WriteLine(result.Value);
+				foreach (var node in originalNodes)
+					if (node.NodeType != XmlNodeType.Text)
+						throw new Exception("All original nodes are not text nodes. Post a comment at jc3mods telling what mods you were trying to combine.");
+				foreach (var node in nodes)
+					if (node.NodeType != XmlNodeType.Text)
+						throw new Exception("All nodes are not text nodes. Post a comment at jc3mods telling what mods you were trying to combine.");
 
-			var dir = Path.GetDirectoryName(newFileLocation);
-			if (!Directory.Exists(dir))
-				Directory.CreateDirectory(dir);
-			originalDoc.Save(newFileLocation);
-		}
+				var selectionItems = GetSelectionItems(originalNodes, nodes, breadcrumbs);
 
-		private void RecursiveCombine2(XmlNode originalNode, IList<XmlNode> nodes)
-		{
-
-			var nodeDict = new List<NodeDictionary>();
-			foreach (var node in nodes)
-			{
-				nodeDict.Add(new NodeDictionary(node));
-			}
-
-			if (originalNode.ChildNodes.Count >= 1 && originalNode.ChildNodes[0].NodeType == XmlNodeType.Text)
-			{
-				var overridingNode = GetOverridingNode(originalNode, nodes);
-				ChangeNode(originalNode, overridingNode);
-			}
-			else if (originalNode.NodeType == XmlNodeType.Element)
-			{
-				var used = new HashSet<XmlNode>();
-				var nodesToRemove = new List<XmlNode>();
-				foreach (XmlNode originalChildNode in originalNode.ChildNodes)
+				if (selectionItems.Count == 0)
+					return;
+				if (selectionItems.Count == 1)
 				{
-					var correspodingNodes = GetCorrespondingNodes(originalChildNode, nodes, nodeDict);
-					used.Add(originalChildNode);
-					foreach (XmlNode node in correspodingNodes)
+					if (selectionItems[0].Name != "Original")
+						ChangeNode(result, (XmlNode)selectionItems[0].Value);
+					return;
+				}
+				if (selectionItems[0].Name == "Original" && selectionItems.Count == 2)
+				{
+					ChangeNode(result, (XmlNode)selectionItems[1].Value);
+				}
+				var replacingNode = (XmlNode)selectionItems[selectionItems.Count - 1].Value;
+				object selectionResult = null;
+				if (notifyCollissions && SelectionDialog.Show("Collission at " + XmlTools.GetPath(result), selectionItems, out selectionResult, out notifyCollissions))
+				{
+					replacingNode = (XmlNode)selectionResult;
+				}
+				ChangeNode(result, replacingNode);
+			}
+			else if (result.NodeType == XmlNodeType.Element)
+			{
+				var resultNodeDict = new NodeDictionary(result);
+				var nodeDict = new NodeDictionary();
+				foreach (var node in nodes)
+				{
+					foreach (XmlNode childNode in node)
 					{
-						used.Add(node);
+						var id = XmlTools.GetID(childNode);
+						if (id != null)
+							nodeDict[id] = childNode;
 					}
+				}
 
-					var changeIDs = GetChangeIDs(originalChildNode, correspodingNodes);
-					var changeNodes = new List<XmlNode>();
-					var files = new List<string>();
-					var uniqueChanges = new HashSet<string>();
+				foreach (var node in originalNodes)
+					if (node.NodeType != XmlNodeType.Element)
+						throw new Exception("All original nodes are not Elements. Post a comment at jc3mods telling what mods you were trying to combine.");
+				foreach (var node in nodes)
+					if (node.NodeType != XmlNodeType.Element)
+						throw new Exception("All nodes are not Elements. Post a comment at jc3mods telling what mods you were trying to combine.");
+
+				var nodesToRemove = new List<XmlNode>();
+				foreach (XmlNode resultChildNode in result)
+				{
+					var correspondingOriginalNodes = GetCorrespondingNodes(resultChildNode, originalNodes);
+					var correspondingNodes = GetCorrespondingNodes(resultChildNode, nodes);
+
+					var changeIds = GetChangedIds(correspondingOriginalNodes, correspondingNodes);
+					if (changeIds.Count == 0)
+						continue;
+					if (changeIds.Count == 1)
+					{
+						if (correspondingNodes[changeIds[0][0]] == null)
+							nodesToRemove.Add(resultChildNode);
+						else
+							ChangeNode(resultChildNode, correspondingNodes[changeIds[0][0]]);
+						continue;
+					}
 
 					var nullFound = false;
-					var textNodeFound = false;
 					var nonNullChangeFound = false;
-					foreach (int index in changeIDs)
+
+					foreach (List<int> l in changeIds)
 					{
-						var node = correspodingNodes[index];
-						if (node == null)
-							uniqueChanges.Add(null);
-						else
-							uniqueChanges.Add(node.OuterXml);
-						if (index >= this.fileNames.Length)
-							files.Add("Failed to get file name");
-						else
-							files.Add(this.fileNames[index]);
-						changeNodes.Add(node);
-						if (node == null)
-							nullFound = true;
-						else if (node.NodeType == XmlNodeType.Text)
-							textNodeFound = true;
-						if (node != null && node.OuterXml != originalChildNode.OuterXml)
-							nonNullChangeFound = true;
-					}
-
-					var items = new List<SelectionItem>();
-					items.Add(new SelectionItem() { Name = "Default", Description = XmlTools.GetOuterXml(originalChildNode), Value = originalChildNode });
-					foreach (int index in changeIDs)
-					{
-						var changedNode = correspodingNodes[index];
-						for (var i = 1; i < items.Count; i++)
+						foreach (int i in l)
 						{
-							var found = false;
-							if (changedNode.OuterXml == originalChildNode.OuterXml)
-							{
-								items[i].Name += "\n" + fileNames[index];
-								found = true;
-								break;
-							}
-							if (!found)
-								items.Add(new SelectionItem() { Name = fileNames[index], Description = XmlTools.GetOuterXml(changedNode), Value = changedNode });
-						}
-					}
-
-
-
-					//
-
-					//
-					if (textNodeFound)
-					{
-						//TODO:Clean ^?
-						var overridingNode = changeNodes[changeNodes.Count - 1];
-						object result = null;
-						if (uniqueChanges.Count > 1 && notifyCollissions && SelectionDialog.Show("Collission at ?", items, out result, out notifyCollissions))
-						{
-							overridingNode = result as XmlNode;
-						}
-
-						if (overridingNode == null)
-						{
-							nodesToRemove.Add(originalChildNode);
-							foreach (XmlNode node in correspodingNodes)
-							{
-								if (node != null)
-									node.ParentNode.RemoveChild(node);
-							}
-						}
-						else if (overridingNode.NodeType == XmlNodeType.Text)
-						{
-							if (used.Contains(overridingNode))
-								nodesToRemove.Add(originalChildNode);
+							var node = nodes[i];
+							if (node == null)
+								nullFound = true;
 							else
-								ChangeNode(originalChildNode, overridingNode);
-							foreach (XmlNode node in correspodingNodes)
-							{
-								if (node != null)
-									node.ParentNode.RemoveChild(node);
-							}
-						}
-						else
-						{
-							foreach (int index in changeIDs)
-							{
-								if (correspodingNodes[index] == null || correspodingNodes[index].NodeType == XmlNodeType.Text)
-								{
-									var parent = nodes[index];
-									var child = parent.OwnerDocument.ImportNode(originalChildNode, true);
-									if (correspodingNodes[index] != null)
-										parent.RemoveChild(correspodingNodes[index]);
-									used.Add(child);
-									parent.AppendChild(child);
-									correspodingNodes[index] = child;
-								}
-							}
-							RecursiveCombine2(originalChildNode, correspodingNodes);
+								nonNullChangeFound = true;
 						}
 					}
-					else if (nullFound && !nonNullChangeFound)
-					{
-						nodesToRemove.Add(originalChildNode);
-						foreach (XmlNode node in correspodingNodes)
-						{
-							if (node != null)
-								ChangeNode(node, null);
-						}
 
-					}
-					else if (nullFound && nonNullChangeFound)
+					if (nullFound && !nonNullChangeFound)
 					{
-						//Fix to ask if continue combine or not
-						var continueCombining = true;
-						object result = null;
-						if (notifyCollissions && SelectionDialog.Show("?", items, out result, out notifyCollissions))
-						{
-							if (result == null)
-								continueCombining = false;
-						}
-						if (continueCombining)
-						{
-							foreach (int index in changeIDs)
-							{
-								if (correspodingNodes[index] == null || correspodingNodes[index].NodeType == XmlNodeType.Text)
-								{
-									var parent = nodes[index];
-									var child = parent.OwnerDocument.ImportNode(originalChildNode, true);
-									if (correspodingNodes[index] != null)
-										parent.RemoveChild(correspodingNodes[index]);
-									parent.AppendChild(child);
-									used.Add(child);
-									correspodingNodes[index] = child; //Used fucks up
-								}
-							}
-							RecursiveCombine2(originalChildNode, correspodingNodes);
-						}
-						else
-						{
-							nodesToRemove.Add(originalChildNode);
-							foreach (XmlNode node in correspodingNodes)
-							{
-								if (node != null)
-									node.ParentNode.RemoveChild(node);
-							}
-						}
+						nodesToRemove.Add(resultChildNode);
 					}
 					else
 					{
-						RecursiveCombine2(originalChildNode, correspodingNodes);
-					}
-				}
+						var nullIds = new List<int>();
+						var continueIds = new List<int>();
 
-				foreach (XmlNode node in nodes)
-				{
-					var originalDict = new NodeDictionary(originalNode);
-
-					if (node == null || node.ChildNodes == null)
-						continue;
-
-					foreach (XmlNode childNode in node.ChildNodes)
-					{
-						var found = false;
-
-						var id = XmlTools.GetID(childNode);
-						if (id == null)
+						foreach (List<int> l in changeIds)
 						{
-							found = node.ChildNodes.Count == 1 && originalNode.ChildNodes.Count == 1;
+							foreach (int i in l)
+							{
+								if (correspondingNodes[i] == null)
+									nullIds.Add(i);
+								else
+									continueIds.Add(i);
+							}
+						}
+
+						var continueCombining = correspondingNodes[changeIds[changeIds.Count - 1][0]] != null;
+						if (notifyCollissions && nullIds.Count > 0)
+						{
+							var selectionItems = new List<SelectionItem>();
+							selectionItems.Add(new SelectionItem() { Name = "Null", Description = "", Value = false });
+							selectionItems.Add(new SelectionItem() { Name = "Continue combining", Description = "", Value = true });
+							foreach (int index in nullIds)
+								selectionItems[0].Description += (selectionItems[0].Description.Length == 0 ? "" : "\n") + breadcrumbs[index];
+							foreach (int index in continueIds)
+								selectionItems[1].Description += (selectionItems[1].Description.Length == 0 ? "" : "\n") + breadcrumbs[index];
+							object selectionResult = null;
+							if (SelectionDialog.Show("Collission at " + XmlTools.GetPath(resultChildNode), selectionItems, out selectionResult, out notifyCollissions))
+							{
+								continueCombining = (bool)selectionResult;
+							}
+						}
+						if (!continueCombining)
+						{
+							nodesToRemove.Add(resultChildNode);
 						}
 						else
 						{
-							if (originalDict.ContainsKey(id))
-								found = true;
-						}
-
-						if (childNode.NodeType == XmlNodeType.Element && !found && !used.Contains(childNode)) //If only one textnode in each do the combine? Fix GetID(originalNode) == null)
-						{
-							used.Add(childNode);
-							var correspondingNodes = GetCorrespondingNodes(childNode, nodes, nodeDict);
-							foreach (XmlNode usedNode in correspondingNodes)
+							var originalChildNodes2 = correspondingOriginalNodes;
+							originalChildNodes2.RemoveAll(item => item == null);
+							var childNodes2 = new List<XmlNode>(continueIds.Count);
+							var breadcrumbs2 = new List<string>(continueIds.Count);
+							foreach (int index in continueIds)
 							{
-								used.Add(usedNode);
+								childNodes2.Add(correspondingNodes[index]);
+								breadcrumbs2.Add(breadcrumbs[index]);
 							}
-							var overridingNode = GetOverridingNode(null, correspondingNodes);
-							if (overridingNode != null)
-								originalNode.AppendChild(originalNode.OwnerDocument.ImportNode(overridingNode, true));
+							RecursiveCombine(resultChildNode, originalChildNodes2, childNodes2, breadcrumbs2);
 						}
 					}
 				}
-
 				foreach (XmlNode node in nodesToRemove)
 				{
-					ChangeNode(node, null);
+					result.RemoveChild(node);
 				}
-			}
-		}
-
-		private XmlNode GetOverridingNode(XmlNode originalNode, IList<XmlNode> nodes)
-		{
-			if (nodes.Count == 0)
-				return originalNode;
-
-			XmlNode overridingNode = originalNode;
-
-			var changeIDs = GetChangeIDs(originalNode, nodes);
-			if (changeIDs.Count == 0)
-				return originalNode;
-
-
-			var set = new HashSet<string>();
-			foreach (int index in changeIDs)
-			{
-				var node = nodes[index];
-				if (node == null)
-					set.Add(null);
-				else
-					set.Add(node.OuterXml);
-			}
-			var allSame = set.Count <= 1;
-
-			if (allSame)
-			{
-				overridingNode = nodes[changeIDs[0]];
+				foreach (KeyValuePair<string, XmlNode> entry in nodeDict)
+				{
+					if (!resultNodeDict.ContainsKey(entry.Key))
+					{
+						result.AppendChild(result.OwnerDocument.ImportNode(entry.Value, true));
+					}
+				}
 			}
 			else
 			{
-				var changeNodes = new List<XmlNode>();
-				var files = new List<string>();
-				foreach (int index in changeIDs)
-				{
-					changeNodes.Add(nodes[index]);
-					if (index >= this.fileNames.Length)
-						files.Add("Failed to get file name");
-					else
-						files.Add(this.fileNames[index]);
-				}
+				throw new Exception("Cant combine nodes of type " + result.NodeType);
+			}
 
-				var items = new List<SelectionItem>();
-				items.Add(new SelectionItem() { Name = "Default", Description = XmlTools.GetOuterXml(originalNode), Value = originalNode });
-				foreach (int index in changeIDs)
+		}
+
+		private static void ChangeNode(XmlNode originalNode, XmlNode replacingNode)
+		{
+			if (replacingNode != null && originalNode.NodeType != replacingNode.NodeType)
+			{
+				throw new Exception("Nodes don't have the same type. Node 1: " + originalNode.NodeType + " Node 2: " + replacingNode.NodeType);
+			}
+			if (originalNode.NodeType == XmlNodeType.Element)
+			{
+				if (originalNode == replacingNode)
+					return;
+
+				while (originalNode.FirstChild != null)
+					originalNode.RemoveChild(originalNode.FirstChild);
+
+				if (replacingNode != null)
 				{
-					var changedNode = nodes[index];
-					var found = false;
-					for (var i = 1; i < items.Count; i++)
+					foreach (XmlNode node in replacingNode)
 					{
-						if (changedNode.OuterXml == originalNode.OuterXml)
+						var newChild = originalNode.OwnerDocument.ImportNode(node, true);
+						originalNode.AppendChild(newChild);
+					}
+				}
+			}
+			else if (originalNode.NodeType == XmlNodeType.Text)
+			{
+				originalNode.Value = replacingNode.Value;
+			}
+			else
+			{
+				throw new Exception("Can't replace nodes type of " + originalNode.NodeType);
+			}
+		}
+
+		private static List<SelectionItem> GetSelectionItems(List<XmlNode> originalNodes, List<XmlNode> nodes, List<string> breadcrumbs)
+		{
+			var changeIds = GetChangedIds(originalNodes, nodes);
+			var selectionItems = new List<SelectionItem>();
+			if (originalNodes.Count != 0)
+			{
+				var originalNode = originalNodes[originalNodes.Count - 1];
+				selectionItems.Add(new SelectionItem() { Name = "Original", Description = XmlTools.GetOuterXml(originalNode), Value = originalNode });
+			}
+			foreach (List<int> l in changeIds)
+			{
+				var item = new SelectionItem() { Name = breadcrumbs[l[0]], Description = XmlTools.GetOuterXml(nodes[l[0]]), Value = nodes[l[0]] };
+				for (var i = 1; i < l.Count; i++)
+				{
+					item.Name += "\n" + breadcrumbs[l[i]];
+				}
+				selectionItems.Add(item);
+			}
+			return selectionItems;
+		}
+
+		private static List<List<int>> GetChangedIds(List<XmlNode> originalNodes, List<XmlNode> nodes)
+		{
+			var changeIds = new List<List<int>>();
+			for (var i = 0; i < nodes.Count; i++)
+			{
+				var node = nodes[i];
+				bool isChanged = true;
+				foreach (XmlNode originalNode in originalNodes)
+				{
+					if ((node == null || originalNode == null) && node == originalNode)
+					{
+						isChanged = false;
+						break;
+					}
+					else if (node != null && originalNode != null && node.OuterXml == originalNode.OuterXml)
+					{
+						isChanged = false;
+						break;
+					}
+				}
+				if (isChanged)
+				{
+					var equalNodeFound = false;
+					foreach (List<int> l in changeIds)
+					{
+						var node2 = nodes[l[0]];
+						if (node == null && node2 == null || (node != null && node2 != null && node.OuterXml == node2.OuterXml))
 						{
-							items[i].Name += "\n" + fileNames[index];
-							found = true;
+							equalNodeFound = true;
+							l.Add(i);
 							break;
 						}
 					}
-					if (!found)
-						items.Add(new SelectionItem() { Name = fileNames[index], Description = XmlTools.GetOuterXml(changedNode), Value = changedNode });
-
-				}
-
-				object result = null;
-				if (notifyCollissions && SelectionDialog.Show("?", items, out result, out notifyCollissions))
-				{
-					overridingNode = result as XmlNode;
-				}
-				else
-				{
-					if (changeNodes.Count > 0)
-						overridingNode = changeNodes[changeNodes.Count - 1];
+					if (!equalNodeFound)
+						changeIds.Add(new List<int>() { i });
 				}
 			}
-			return overridingNode;
+			return changeIds;
 		}
 
-
-		private void ChangeNode(XmlNode originalNode, XmlNode newNode)
+		private static List<XmlNode> GetCorrespondingNodes(XmlNode originalNode, List<XmlNode> nodes)
 		{
-			if (originalNode == newNode)
-				return;
-			var parentNode = originalNode.ParentNode;
-			if (newNode != null)
+			var correspondingNodes = new List<XmlNode>(nodes.Count);
+			var originalId = XmlTools.GetID(originalNode);
+			if (originalId == null)
 			{
-
-				foreach (XmlNode node in originalNode.ChildNodes)
+				foreach (var node in nodes)
 				{
-					originalNode.RemoveChild(node);
-				}
-				foreach (XmlNode node in newNode.ChildNodes)
-				{
-					var newChild = originalNode.OwnerDocument.ImportNode(node, true);
-					originalNode.AppendChild(newChild);
-				}
-				//Move to nodesToChange
-
-			}
-			else
-			{
-				parentNode.RemoveChild(originalNode);
-			}
-		}
-
-
-		private IList<XmlNode> GetCorrespondingNodes(XmlNode originalChildNode, IList<XmlNode> nodes, IList<NodeDictionary> nodeDict)
-		{
-			string id = XmlTools.GetID(originalChildNode);
-
-			XmlNode[] correspondingNodes = new XmlNode[nodes.Count];
-
-			if (id == null)
-			{
-				if (originalChildNode.ParentNode.ChildNodes.Count == 1)
-				{
-					for (var i = 0; i < nodes.Count; i++)
+					XmlNode result = null;
+					if (originalNode.ParentNode.ChildNodes.Count == 1 && node.ChildNodes.Count == 1)
 					{
-						var node = nodes[i];
-						if (node == null)
-							throw new ArgumentNullException("asdasdasd"); //TODO DELETE?
-						if (node.ChildNodes.Count == 1)
-							correspondingNodes[i] = node.ChildNodes[0];
-						else
-							throw new NotImplementedException("");
+						result = node.ChildNodes[0];
 					}
-				}
-				else
-				{
-					throw new NotImplementedException("Finding corresponding nodes for nodes without id not implemented.");
+					correspondingNodes.Add(result);
 				}
 			}
 			else
 			{
-				for (var i = 0; i < nodes.Count; i++)
+				foreach (var node in nodes)
 				{
-					var node = nodes[i];
-					if (node != null)
+					XmlNode result = null;
+					foreach (XmlNode childNode in node)
 					{
-						if (nodeDict[i].ContainsKey(id))
+						var id = XmlTools.GetID(childNode);
+						if (id == originalId)
 						{
-							correspondingNodes[i] = nodeDict[i][id];
+							result = childNode;
+							break;
 						}
 					}
+					correspondingNodes.Add(result);
 				}
 			}
 
 			return correspondingNodes;
-		}
-
-		private IList<int> GetChangeIDs(XmlNode originalNode, IList<XmlNode> nodes)
-		{
-			var changeIDs = new List<int>();
-			for (var i = 0; i < nodes.Count; i++)
-			{
-				var node = nodes[i];
-				if (!(node == null && originalNode == null))
-					if ((originalNode == null && node != null) || (originalNode != null && node == null) || (node.OuterXml != originalNode.OuterXml))
-						changeIDs.Add(i);
-			}
-			return changeIDs;
-		}
-
-		private void AddittiveCombine(IList<XmlNode> nodes)
-		{
-
 		}
 
 

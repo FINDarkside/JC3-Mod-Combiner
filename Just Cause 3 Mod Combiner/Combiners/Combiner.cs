@@ -9,10 +9,10 @@ namespace Just_Cause_3_Mod_Combiner
 	public class Combiner
 	{
 
-		public static IList<string> rootFiles;
+		public static List<string> rootFiles;
 		public static bool notifyCollissions;
 
-		public static void Combine(IList<string> files, bool notifyCollissions)
+		public static void Combine(List<string> files, bool notifyCollissions)
 		{
 			Settings.SetBusyContent("Combining...");
 			rootFiles = files;
@@ -24,135 +24,149 @@ namespace Just_Cause_3_Mod_Combiner
 				throw new ArgumentException("Can't combine " + Path.GetExtension(files[0]) + " files. If you need to combine these files, let me know at jc3mods.com");
 			}
 
-			string originalFile = DefaultFiles.GetFile(Path.GetFileName(files[0]));
-			if (originalFile == null)
+			var originalFiles = DefaultFiles.GetFile(Path.GetFileName(files[0]));
+			if (originalFiles.Count == 0)
 			{
-				throw new Exception("Couldn't find default file for " + Path.GetFileName(files[0]));
+				throw new Exception("Couldn't find default files for " + Path.GetFileName(files[0]));
 			}
-			var outputPath = Path.Combine(Settings.user.JC3Folder, "dropzone", originalFile.Substring(Settings.defaultFiles.Length + 1));
-			Combine(originalFile, fileFormat, files, outputPath);
-
+			var outputPath = Path.Combine(Settings.user.JC3Folder, "dropzone", originalFiles[0].Substring(Settings.defaultFiles.Length + 1));
+			var name = Path.GetFileNameWithoutExtension(outputPath);
+			outputPath = Path.GetDirectoryName(outputPath) + "\\" + name.Substring(0, name.LastIndexOf('_')) + Path.GetExtension(outputPath);
+			Combine(originalFiles, files, FileFormats.GetFileFormat(originalFiles[0]), outputPath);
 		}
 
-		private static void Combine(string originalFile, FileFormat fileFormat, IList<string> files, string outputPath)
+		private static void Combine(List<string> originalFiles, List<string> files, FileFormat fileFormat, string outputPath)
 		{
+
 			Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
-			Settings.SetBusyContent("Combining " + Path.GetFileName(originalFile));
+
 			if (fileFormat == FileFormat.Property)
 			{
+				Settings.SetBusyContent("Combining " + Path.GetFileName(originalFiles[0]));
 
-				var originalXml = GibbedsTools.ConvertProperty(originalFile, TempFolder.GetTempFile(), GibbedsTools.ConvertMode.Export);
+				List<string> originalXml = originalFiles.Select(originalFile => GibbedsTools.ConvertProperty(originalFile, TempFolder.GetTempFile(), GibbedsTools.ConvertMode.Export)).ToList();
+				List<string> xmlFiles = files.Select(originalFile => GibbedsTools.ConvertProperty(originalFile, TempFolder.GetTempFile(), GibbedsTools.ConvertMode.Export)).ToList();
 
-				var xmlFiles = new List<string>();
-				foreach (string file in files)
-				{
-					xmlFiles.Add(GibbedsTools.ConvertProperty(file, TempFolder.GetTempFile(), GibbedsTools.ConvertMode.Export));
-				}
+				var xmlOutputPath = TempFolder.GetTempFile();
+				Combine(originalXml, xmlFiles, FileFormat.Xml, xmlOutputPath);
 
-				var combiner = new XmlCombiner(originalXml, xmlFiles, rootFiles, notifyCollissions);
-				combiner.Combine(originalXml);
-				GibbedsTools.ConvertProperty(originalXml, outputPath, GibbedsTools.ConvertMode.Import);
+				GibbedsTools.ConvertProperty(xmlOutputPath, outputPath, GibbedsTools.ConvertMode.Import);
 			}
 			else if (fileFormat == FileFormat.Adf)
 			{
-				OverrideCombine(originalFile, files, outputPath, true);
+				Settings.SetBusyContent("Combining " + Path.GetFileName(originalFiles[0]));
+
+				OverrideCombine(originalFiles, files, outputPath, true);
 			}
 			else if (fileFormat == FileFormat.Xml)
 			{
 				var fileNames = rootFiles;
 				if (files != rootFiles)
 				{
-					fileNames = rootFiles.Select(item => Path.Combine(item, Path.GetFileName(originalFile))).ToList<string>();
+					fileNames = rootFiles.Select(item => Path.Combine(item, Path.GetFileName(originalFiles[0]))).ToList<string>();
 				}
-				var combiner = new XmlCombiner(originalFile, files, fileNames, notifyCollissions);
-				combiner.Combine(outputPath);
+				XmlCombiner.Combine(originalFiles, files, fileNames, notifyCollissions, outputPath);
 			}
 			else if (fileFormat == FileFormat.Unknown)
 			{
-				OverrideCombine(originalFile, files, outputPath, false);
+				Settings.SetBusyContent("Combining " + Path.GetFileName(originalFiles[0]));
+
+				OverrideCombine(originalFiles, files, outputPath, false);
 			}
 			else if (fileFormat == FileFormat.SmallArchive)
 			{
-				Settings.SetBusyContent("Unpacking " + Path.GetFileName(originalFile));
-				int combineCount = 0;
+				Settings.SetBusyContent("Unpacking " + Path.GetFileName(originalFiles[0]));
 
-				var originalUnpacked = GibbedsTools.SmallUnpack(originalFile, TempFolder.GetTempFile());
-				combineCount++;
+				var originalUnpacked = originalFiles.Select(file => GibbedsTools.SmallUnpack(file, TempFolder.GetTempFile())).ToList();
+				var unpackedFiles = files.Select(file => GibbedsTools.SmallUnpack(file, TempFolder.GetTempFile())).ToList();
 
-				var unpackedFiles = new List<string>();
-				foreach (string file in files)
-				{
-					unpackedFiles.Add(GibbedsTools.SmallUnpack(file, TempFolder.GetTempFile()));
-					combineCount++;
-				}
-				foreach (string file in Directory.GetFiles(originalUnpacked, "*", SearchOption.AllDirectories))
+				foreach (string file in Directory.EnumerateFiles(originalUnpacked[originalUnpacked.Count - 1], "*", SearchOption.AllDirectories))
 				{
 					Settings.SetBusyContent("Combining " + Path.GetFileName(file));
+					var correspondingOriginals = new List<string>();
+					foreach (var unpackedFile in originalUnpacked)
+					{
+						string path = Path.Combine(unpackedFile, file.Substring(originalUnpacked[0].Length + 1));
+						correspondingOriginals.Add(path);
+					}
 					var correspondingFiles = new List<string>();
 					foreach (string unpackedFile in unpackedFiles)
 					{
-						string path = Path.Combine(unpackedFile, file.Substring(originalUnpacked.Length + 1));
+						string path = Path.Combine(unpackedFile, file.Substring(originalUnpacked[0].Length + 1));
 						correspondingFiles.Add(path);
 					}
 
-					var fileFormat2 = FileFormats.GetFileFormat(file);
-					Combine(file, fileFormat2, correspondingFiles, file);
+					Combine(correspondingOriginals, correspondingFiles, FileFormats.GetFileFormat(file), file);
 				}
-				Settings.SetBusyContent("Packing " + Path.GetFileName(originalFile));
-				GibbedsTools.SmallPack(originalUnpacked, outputPath);
+				Settings.SetBusyContent("Packing " + Path.GetFileName(originalFiles[0]));
+				GibbedsTools.SmallPack(originalUnpacked[originalUnpacked.Count - 1], outputPath);
 			}
 
 		}
 
-		private static void OverrideCombine(string originalFile, IList<string> files, string outputPath, bool binaryCombine)
+		private static void OverrideCombine(List<string> originalFiles, List<string> files, string outputPath, bool binaryCombine)
 		{
-			var items = new List<SelectionItem>();
-			items.Add(new SelectionItem() { Name = "Original", Value = originalFile });
-
 			bool allSameSize = true;
-			var originalBytes = File.ReadAllBytes(originalFile);
-			byte[] replacingBytes = null;
+
+			var originalHashes = originalFiles.Select(file => SHA256.ComputeHash(file)).ToList();
+			var modifiedFileHashes = new Dictionary<string, List<int>>();
+			var size = new FileInfo(files[0]).Length;
 			for (var i = 0; i < files.Count; i++)
 			{
 				var file = files[i];
-				var bytes = File.ReadAllBytes(file);
-				if (!Enumerable.SequenceEqual(bytes, originalBytes))
+				var hash = SHA256.ComputeHash(file);
+				if (!originalHashes.Contains(hash))
 				{
-					replacingBytes = bytes;
-					var alreadyFound = false;
-					for (var j = 1; j < items.Count; j++)
-					{
-						if (Enumerable.SequenceEqual(File.ReadAllBytes((string)items[j].Value), bytes))
-						{
-							items[j].Name += "\n" + Path.Combine(rootFiles[i], Path.GetFileName(originalFile));
-						}
-					}
-					if (!alreadyFound)
-						items.Add(new SelectionItem() { Name = Path.Combine(rootFiles[i], Path.GetFileName(originalFile)), Value = file });
+					if (modifiedFileHashes.ContainsKey(hash))
+						modifiedFileHashes[hash].Add(i);
+					else
+						modifiedFileHashes.Add(hash, new List<int>() { i });
+					if (new FileInfo(file).Length != size)
+						allSameSize = false;
 				}
-				if (bytes.Length != originalBytes.Length)
-					allSameSize = false;
 			}
-			if (items.Count == 1)
+
+			if (modifiedFileHashes.Count == 0)
 				return;
-			if (items.Count == 2)
+
+			if (modifiedFileHashes.Count == 1)
 			{
-				File.WriteAllBytes(outputPath, replacingBytes);
+				if (File.Exists(outputPath))
+					File.Delete(outputPath);
+				File.Copy(files[modifiedFileHashes.First().Value[0]], outputPath);
 				return;
 			}
 
 			if (binaryCombine && allSameSize)
 			{
-				BinaryCombiner.Combine(originalFile, files, outputPath, notifyCollissions);
+				BinaryCombiner.Combine(originalFiles, files, outputPath, notifyCollissions);
 			}
 			else
 			{
-				object result = null;
-				if (notifyCollissions && SelectionDialog.Show("Select overriding file",items, out result, out notifyCollissions))
+				var items = new List<SelectionItem>();
+				items.Add(new SelectionItem() { Name = "Original", Value = originalFiles[originalFiles.Count - 1] + "\\" + Path.GetFileName(originalFiles[0]) });
+				foreach (KeyValuePair<string, List<int>> pair in modifiedFileHashes)
 				{
-					replacingBytes = File.ReadAllBytes((string)result);
+					var item = new SelectionItem()
+					{
+						Name = pair.Value.Count == 1 ? rootFiles[pair.Value[0]] + "\\" + Path.GetFileName(originalFiles[0]) : "",
+						Description = pair.Value.Count == 1 ? null : rootFiles[pair.Value[0]] + "\\" + Path.GetFileName(originalFiles[0]),
+						Value = files[pair.Value[0]]
+					};
+					items.Add(item);
 				}
-				File.WriteAllBytes(outputPath, replacingBytes);
+
+				string replacingFile = (string)items[items.Count - 1].Value;
+				object result = null;
+				if (notifyCollissions && SelectionDialog.Show("Select overriding file", items, out result, out notifyCollissions))
+				{
+					replacingFile = (string)result;
+				}
+				if (outputPath == replacingFile)
+					return;
+				if (File.Exists(outputPath))
+					File.Delete(outputPath);
+				File.Copy(replacingFile, outputPath);
 			}
 		}
 

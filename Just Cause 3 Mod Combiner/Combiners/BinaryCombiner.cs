@@ -1,40 +1,44 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Just_Cause_3_Mod_Combiner
 {
 	public class BinaryCombiner
 	{
-		public static void Combine(string originalFile, IList<string> files, bool notifyCollissions)
+		public static void Combine(List<string> originalFiles, List<string> files, bool notifyCollissions)
 		{
-			Combine(originalFile, files, originalFile, notifyCollissions);
+			Combine(originalFiles, files, originalFiles[originalFiles.Count - 1], notifyCollissions);
 		}
 
-		public static void Combine(string originalFile, IList<string> files,string outputPath, bool notifyCollissions)
+		public static void Combine(List<string> originalFiles, List<string> files, string outputPath, bool notifyCollissions)
 		{
-			byte[] originalBytes = File.ReadAllBytes(originalFile); 
-			var fileBytes = new List<byte[]>();
-			foreach (string file in files)
-			{
-				var bytes = File.ReadAllBytes(file);
-				fileBytes.Add(bytes);
-			}
+			var originalFileBytes = originalFiles.Select(file => File.ReadAllBytes(file)).ToList();
+			var fileBytes = files.Select(file => File.ReadAllBytes(file)).ToList();
 
-			for (var i = 0; i < originalBytes.Length; i++)
+			for (var i = 0; i < originalFileBytes[0].Length; i++)
 			{
 				for (var j = fileBytes.Count - 1; j >= 0; j--)
 				{
 					var bytes = fileBytes[j];
-					if (bytes[i] != originalBytes[i])
+					var equalBytesFound = false;
+					foreach (var originalFile in originalFileBytes)
 					{
-						originalBytes[i] = bytes[i];
+						if (bytes[i] == originalFile[i])
+						{
+							equalBytesFound = true;
+							break;
+						}
+					}
+					if (!equalBytesFound)
+					{
+						originalFileBytes[originalFileBytes.Count - 1][i] = bytes[i];
 						break;
 					}
 				}
 			}
 
-			File.WriteAllBytes(outputPath, originalBytes);
-
+			File.WriteAllBytes(outputPath, originalFileBytes[originalFileBytes.Count - 1]);
 		}
 	}
 }

@@ -58,16 +58,44 @@ namespace Just_Cause_3_Mod_Combiner
 			fileList.ItemContainerStyle = style;
 		}
 
-		public void AddFileToList(string file)
+		public async void AddFileToList(string file)
 		{
-			if (File.Exists(file))
+			if (Directory.Exists(file))
 			{
-				foreach (Item item in Items)
+				ErrorDialog.Show("Can't combine directories");
+				return;
+			}
+			FileStream stream = null;
+			try
+			{
+				stream = File.Open(file, FileMode.Open, FileAccess.Read);
+			}
+			catch (Exception ex)
+			{
+				Errors.Handle(ex);
+				return;
+			}
+			finally
+			{
+				if (stream != null)
 				{
-					if (Path.Equals(item.File, file))
-						return;
+					stream.Close();
+					stream.Dispose();
 				}
 			}
+
+			if (!await FileFormats.IsKnownFormat(file))
+			{
+				ErrorDialog.Show("Can't combine " + Path.GetExtension(file) + " files. If you need to combine these let me know at jc3mods.com");
+				return;
+			}
+
+			foreach (Item item in Items)
+			{
+				if (Path.Equals(item.File, file))
+					return;
+			}
+
 			Items.Add(new Item(file));
 		}
 
@@ -131,15 +159,7 @@ namespace Just_Cause_3_Mod_Combiner
 				string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 				foreach (string file in files)
 				{
-					if (Directory.Exists(file))
-					{
-						ErrorDialog.Show("Can't combine directories");
-						continue;
-					}
-					if(await FileFormats.IsKnownFormat(file))
-						AddFileToList(file);
-					else
-						ErrorDialog.Show("Can't combine " + Path.GetExtension(file) + " files. If you need to combine these let me know at jc3mods.com");
+					AddFileToList(file);
 				}
 			}
 			else if (e.Data.GetData(typeof(Item)) != null)

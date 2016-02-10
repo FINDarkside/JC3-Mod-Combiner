@@ -1,14 +1,10 @@
+XMLCombiner - AddittiveCombiner for added elements?
 Show the right file breadcrumbs in SelectionDialog
 Set SelectionDialog Headers
-Tell user not to add folders
 Center all dialogs?
 MAKE A FAQ
-No permissions to file exception
 Check if owrks from different drive 
-
-Match multiple original files
-Rewrite xml combiner
-SelectionDialog null or combine these
+Don't cancel ee combine if xmlcombine fails
 
 ?:
 Copy default file cache
@@ -28,3 +24,8 @@ Center error dialogs
 Fix error with missing dlc folder
 Make task to wait only when needed
 Find original files by hash and size
+Rewrite xml combiner
+SelectionDialog null or combine these
+Match multiple original files
+No permissions to file exception
+Tell user not to add folders

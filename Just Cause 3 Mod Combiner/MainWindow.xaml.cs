@@ -37,8 +37,6 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public MainWindow()
 		{
-			Settings.mainWindow = this;
-
 			AppDomain currentDomain = AppDomain.CurrentDomain;
 			currentDomain.UnhandledException += new UnhandledExceptionEventHandler((object sender, UnhandledExceptionEventArgs args) =>
 			{
@@ -124,13 +122,13 @@ namespace Just_Cause_3_Mod_Combiner
 
 			Directory.CreateDirectory(Path.Combine(Settings.user.JC3Folder, "dropzone"));
 
-
 			Items = new ObservableCollection<Item>();
 			fileList.Items = Items;
 
+			Settings.mainWindow = this;
 		}
 
-		private async void AddFile(object sender, RoutedEventArgs e)
+		private void AddFile(object sender, RoutedEventArgs e)
 		{
 			var dialog = new OpenFileDialog();
 			dialog.CheckFileExists = true;
@@ -140,15 +138,7 @@ namespace Just_Cause_3_Mod_Combiner
 				var files = dialog.FileNames;
 				foreach (var file in files)
 				{
-					if (Directory.Exists(file))
-					{
-						ErrorDialog.Show("Can't combine directories");
-						continue;
-					}
-					if (await FileFormats.IsKnownFormat(file))
-						fileList.AddFileToList(file);
-					else
-						ErrorDialog.Show("Can't combine " + Path.GetExtension(file) + " files. If you need to combine these let me know at jc3mods.com");
+					fileList.AddFileToList(file);
 				}
 			}
 		}
@@ -160,56 +150,6 @@ namespace Just_Cause_3_Mod_Combiner
 
 		private async void CombineClicked(object sender, RoutedEventArgs e)
 		{
-
-			var result2 = new XmlDocument();
-
-			var originalDocs = new List<XmlDocument>();
-			var docs = new List<XmlDocument>();
-			var breadcrumbs = new List<string>() { "TESTSHIT", "Test2" };
-
-			var doc = new XmlDocument();
-			doc.LoadXml(@"<note>
-							<value id=""A"">Tove</value>
-							<value id=""B"">Jani</value>
-							<value id=""C"">Reminder</value>
-							<value id=""D"">Don't forget me this weekend!</value>
-						</note>");
-			result2 = doc;
-
-			doc = new XmlDocument();
-			doc.LoadXml(@"<note>
-							<value id=""A"">Tove</value>
-							<value id=""B"">Jani</value>
-							<value id=""C"">Reminder</value>
-							<value id=""D"">Don't forget me this weekend!</value>
-						</note>");
-
-			originalDocs.Add(doc);
-
-			doc = new XmlDocument();
-			doc.LoadXml(@"<note>
-							<value id=""A"">Test sdf</value>
-							<value id=""B"">Jani</value>
-							<value id=""C"">Reminder</value>
-							<value id=""D"">Don't forget me this weekend!</value>
-						</note>");
-
-			docs.Add(doc);
-
-			doc = new XmlDocument();
-			doc.LoadXml(@"<note>
-							<value id=""A"">test2</value>
-							<value id=""B"">Jani</value>
-							<value id=""D"">Don't forget me this weekend!</value>
-						</note>");
-
-			docs.Add(doc);
-
-			XmlCombiner2.Combine(result2, originalDocs, docs, breadcrumbs, true);
-
-
-			//
-
 			if (runningTask != null && !runningTask.IsCompleted)
 			{
 				busyIndicator.IsBusy = true;
@@ -239,7 +179,7 @@ namespace Just_Cause_3_Mod_Combiner
 			busyIndicator.IsBusy = true;
 			try
 			{
-				var items = fileList.Items.Select(item => item.File).ToArray<string>();
+				var items = fileList.Items.Select(item => item.File).ToList<string>();
 				var alertCollissions = rbAdvancedCombine.IsChecked == true;
 				await Task.Run(() =>
 				{
@@ -266,7 +206,7 @@ namespace Just_Cause_3_Mod_Combiner
 
 		private async void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			if (Settings.local.lastRevision >= 4 && Settings.local.lastRevision < Settings.revision && Settings.local.lastInstallPath != Settings.currentPath)
+			if (Settings.local.lastRevision >= 5 && Settings.local.lastRevision < Settings.revision && Settings.local.lastInstallPath != Settings.currentPath)
 			{
 				var defaultFilesPath = Path.Combine(Settings.local.lastInstallPath, @"Files\Default files");
 

@@ -26,7 +26,7 @@ namespace Just_Cause_3_Mod_Combiner
 			}
 		}
 
-		public static string GetFile(string fileName)
+		public static List<string> GetFile(string fileName)
 		{
 			Settings.SetBusyContent("Finding default files for " + fileName + "...");
 
@@ -73,7 +73,7 @@ namespace Just_Cause_3_Mod_Combiner
 
 			if (result.Count == fileInfos.Count)
 			{
-				return result[0]; //return result;
+				return result; //return result;
 			}
 
 			foreach (string file in result)
@@ -107,7 +107,7 @@ namespace Just_Cause_3_Mod_Combiner
 					break;
 				}
 			}
-			return result[0];
+			return result;
 		}
 	}
 }

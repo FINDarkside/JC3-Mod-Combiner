@@ -64,19 +64,44 @@ namespace Just_Cause_3_Mod_Combiner
 
 		public static void Show(string header)
 		{
-			Show(header, null);
+			ShowAsync(header, null);
 		}
 
-		public static void Show(string header, string content)
+		public static void ShowAsync(string header, string content)
+		{
+			Application.Current.Dispatcher.BeginInvoke((Action)delegate
+			{
+				var dialog = new ErrorDialog(header, content);
+				if (Settings.mainWindow != null)
+				{
+					dialog.Owner = Settings.mainWindow;
+					dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+				}
+				else
+				{
+					dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+				}
+				dialog.ShowDialog();
+			});
+		}
+
+		/*public static void Show(string header, string content)
 		{
 			Settings.mainWindow.Dispatcher.Invoke((Action)delegate
 			{
 				var dialog = new ErrorDialog(header, content);
-				dialog.Owner = Settings.mainWindow;
-				dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+				if (Settings.mainWindow != null)
+				{
+					dialog.Owner = Settings.mainWindow;
+					dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+				}
+				else
+				{
+					dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+				}
 				dialog.ShowDialog();
 			});
-		}
+		}*/
 
 		private void OkClicked(object sender, RoutedEventArgs e)
 		{

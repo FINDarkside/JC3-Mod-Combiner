@@ -59,12 +59,12 @@ namespace Just_Cause_3_Mod_Combiner
 			object result = null;
 			bool notifyColl = false;
 			bool dialogResult = false;
-			Settings.mainWindow.Dispatcher.Invoke((Action)delegate
+			Application.Current.Dispatcher.Invoke((Action)delegate
 			{
 				var dialog = new SelectionDialog(items);
 				dialog.tbHeader.Text = header;
 				dialog.Owner = Settings.mainWindow;
-				dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+				dialog.WindowStartupLocation = Settings.mainWindow != null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen;
 				dialog.ShowDialog();
 				result = dialog.SelectedItem;
 				notifyColl = dialog.DontShowAgain;

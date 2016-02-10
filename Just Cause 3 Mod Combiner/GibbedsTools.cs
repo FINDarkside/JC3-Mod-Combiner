@@ -135,15 +135,11 @@ namespace Just_Cause_3_Mod_Combiner
 			proc.Start();
 			proc.WaitForExit();
 
-			File.Delete(outputPath);
-			try
-			{
-				Directory.Delete(Path.GetDirectoryName(outputPath), true);
-			}
-			catch (IOException)
-			{
-				//Do nothing
-			}
+			if(File.Exists(outputPath))
+				File.Delete(outputPath);
+			if(Directory.Exists(outputPath))
+				Directory.Delete(outputPath, true);
+
 
 			return proc.ExitCode == 0;
 		}

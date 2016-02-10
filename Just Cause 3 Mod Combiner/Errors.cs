@@ -15,13 +15,13 @@ namespace Just_Cause_3_Mod_Combiner
 		public static void Handle(Exception e, bool showDialog)
 		{
 			if (showDialog)
-				ErrorDialog.Show(e.Message, e.ToString());
+				ErrorDialog.ShowAsync(e.Message, e.ToString());
 			Console.Error.WriteLine(e.ToString());
 		}
 
 		public static void Handle(string message, Exception e)
 		{
-			ErrorDialog.Show(message, e.Message + "\n" + e.ToString());
+			ErrorDialog.ShowAsync(message, e.Message + "\n" + e.ToString());
 			Console.Error.WriteLine(e.ToString());
 		}
 

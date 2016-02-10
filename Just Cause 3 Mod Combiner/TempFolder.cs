@@ -28,7 +28,8 @@ namespace Just_Cause_3_Mod_Combiner
 				}
 				result = Path.Combine(path, sb.ToString());
 				Next();
-			} while (Array.IndexOf(illegal, result) != -1 || File.Exists(result));
+			} while (Array.IndexOf(illegal, result) != -1 || File.Exists(result) || Directory.Exists(result));
+
 			return result;
 		}
 
@@ -56,9 +57,23 @@ namespace Just_Cause_3_Mod_Combiner
 			   {
 				   var di = new DirectoryInfo(path);
 				   foreach (FileInfo file in di.GetFiles())
-					   file.Delete();
+				   {
+					   try
+					   {
+						   file.Delete();
+					   }
+					   catch (Exception ex) { }
+				   }
+
 				   foreach (DirectoryInfo dir in di.GetDirectories())
-					   dir.Delete(true);
+				   {
+					   try
+					   {
+						   dir.Delete(true);
+					   }
+					   catch (Exception ex) { }
+				   }
+
 
 				   charIndexes = new int[1];
 			   });
